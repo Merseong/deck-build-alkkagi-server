@@ -99,12 +99,26 @@ namespace alkkagi_server
             public TestPacket() { }
         }
 
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public class MessagePacket : Data<MessagePacket>
+        {
+            public int m_senderid;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 100)]
+            public string m_message;
 
-        enum PacketType
+            public MessagePacket() { }
+        }
+
+
+        public enum PacketType
         {
             UNDEFINED,
             PACKET_USER_CLOSED,
             TEST_PACKET,
+            ROOM_BROADCAST,
+            ROOM_OPPONENT,
+            ROOM_ENTER,
             PACKET_COUNT
         }
 
@@ -382,11 +396,6 @@ namespace alkkagi_server
             }
         }
 
-        public class User
-        {
-            // 유저 정보
-        }
-
         public class UserToken
         {
             User m_user;
@@ -404,6 +413,7 @@ namespace alkkagi_server
 
             public UserToken(Socket socket)
             {
+                m_user = ServerManager.Instance.AddUser(this);
                 m_socket = socket;
 
                 m_message_resolver = new MessageResolver();
@@ -545,8 +555,6 @@ namespace alkkagi_server
                             SendProcess();
                     }
                 }
-
-                e.Completed -= OnSendCompleted;
             }
 
             void OnSendCompletedPooling(object sender, SocketAsyncEventArgs e)
@@ -601,14 +609,7 @@ namespace alkkagi_server
                         {
                             foreach (Packet packet in m_packet_list)
                             {
-                                // ProcessPacket(packet);
-                                if (packet.m_type == (short)PacketType.PACKET_USER_CLOSED)
-                                {
-                                    Close();
-                                    return;
-                                }
-                                Console.WriteLine(TestPacket.Deserialize(packet.m_data).m_message);
-                                Send(packet);
+                                m_user.ProcessPacket(packet);
                             }
                             m_packet_list.Clear();
                         }
