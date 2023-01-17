@@ -6,51 +6,6 @@ using System.Threading.Tasks;
 
 namespace alkkagi_server
 {
-    public class ServerManager : Singleton<ServerManager>
-    {
-        public int m_nextUid = 1;
-        public int m_nextRoomId = 1;
-
-        HashSet<User> m_userList;
-        HashSet<GameRoom> m_gameRoomList;
-
-        public User m_waiting = null;
-
-        protected override void Init()
-        {
-            // 이후 룸 만들고 지우는 작업들을 다 해야됨 -> 풀링?
-            m_userList = new HashSet<User>();
-            m_gameRoomList = new HashSet<GameRoom>();
-        }
-
-        public User AddUser(UserToken userToken)
-        {
-            var newUser = new User(userToken);
-            m_userList.Add(newUser);
-
-            return newUser;
-        }
-
-        public GameRoom EnterGameRoom(User user)
-        {
-            if (m_waiting == null)
-            {
-                m_waiting = user;
-                return null;
-            }
-            else
-            {
-                var newRoom = new GameRoom(m_waiting, user);
-                m_gameRoomList.Add(newRoom);
-
-                m_waiting = null;
-
-                return newRoom;
-            }
-        }
-    }
-
-
     public class GameRoom
     {
         // 게임 룸

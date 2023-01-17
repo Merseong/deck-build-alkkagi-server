@@ -94,7 +94,7 @@ namespace alkkagi_server
             {
                 Socket clientSocket = e.AcceptSocket;
 
-                NetworkManager.Inst.OnNewClient(clientSocket, e);
+                ServerManager.Inst.OnNewClient(clientSocket, e);
 
                 mFlowControlEvent.Set();
             }

@@ -8,17 +8,42 @@ using System.Threading.Tasks;
 
 namespace alkkagi_server
 {
-    public class NetworkManager : Singleton<NetworkManager>
+    public class ServerManager : Singleton<ServerManager>
     {
-        List<User> userList;
-        public List<User> userListBuffer;
         public bool threadLive { get; set; }
+        public int m_nextUid = 1;
+        public int m_nextRoomId = 1;
+
+        HashSet<User> userList;
+        public List<User> userListBuffer;
+        HashSet<GameRoom> m_gameRoomList;
+
+        public User m_waiting = null;
 
         protected override void Init()
         {
-            userList = new List<User>();
+            userList = new HashSet<User>();
             userListBuffer = new List<User>();
+            m_gameRoomList = new HashSet<GameRoom>();
             threadLive = true;
+        }
+
+        public GameRoom EnterGameRoom(User user)
+        {
+            if (m_waiting == null)
+            {
+                m_waiting = user;
+                return null;
+            }
+            else
+            {
+                var newRoom = new GameRoom(m_waiting, user);
+                m_gameRoomList.Add(newRoom);
+
+                m_waiting = null;
+
+                return newRoom;
+            }
         }
 
         public void OnNewClient(Socket clientSocket, object eventArgs)
