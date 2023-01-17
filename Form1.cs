@@ -12,7 +12,7 @@ namespace alkkagi_server
 {
     public partial class Form1 : Form
     {
-        MyServer.MyListener server;
+        Listener listener;
         bool isServerActive = false;
 
         public Form1()
@@ -33,8 +33,8 @@ namespace alkkagi_server
                 return;
             }
             Console.WriteLine("ON");
-            server = new MyServer.MyListener();
-            server.StartServer("0.0.0.0", 3333, 100);
+            listener = new Listener();
+            listener.StartServer("0.0.0.0", 3333, 100);
             isServerActive = true;
         }
 
@@ -46,7 +46,7 @@ namespace alkkagi_server
                 return;
             }
             Console.WriteLine("OFF");
-            server.Close();
+            listener.Close();
             isServerActive = false;
         }
     }
