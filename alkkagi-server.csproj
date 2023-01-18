@@ -58,6 +58,7 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Listener.cs" />
+    <Compile Include="MatchQueue.cs" />
     <Compile Include="MessageResolver.cs" />
     <Compile Include="ServerManager.cs" />
     <Compile Include="Packet.cs" />

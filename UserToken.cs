@@ -294,15 +294,19 @@ namespace alkkagi_server
     {
         // 유저 정보
         private UserToken token;
+        private UserData data;
         public int UID { get; set; }
         public GameRoom Room { get; set; }
 
         public UserToken UserToken => token;
+        public UserData UserData => data;
 
         public User(UserToken userToken)
         {
             token = userToken;
             UID = ServerManager.Inst.NextId;
+
+            data = new UserData();
         }
 
         public void ProcessPacket(Packet packet)
@@ -332,8 +336,9 @@ namespace alkkagi_server
                 case PacketType.ROOM_ENTER:
                     if (Room == null)
                     {
-                        Console.WriteLine(UID + ") Entering room");
-                        ServerManager.Inst.EnterGameRoom(this);
+                        Console.WriteLine(UID + ") is matchmaking");
+                        ServerManager.Inst.MatchQueue.AddTicket(
+                            new MatchQueue.Ticket(this, 1000, DateTime.Now));
                     }
                     break;
                 case PacketType.TEST_PACKET:
@@ -343,6 +348,17 @@ namespace alkkagi_server
                     token.Send(packet);
                     break;
             }
+        }
+    }
+
+    // DB와 연계해서 쓸 구조체
+    public struct UserData
+    {
+        public uint mmr;
+
+        public UserData(uint mmr)
+        {
+            this.mmr = mmr;
         }
     }
 }

@@ -107,6 +107,7 @@ namespace alkkagi_server
         {
             listenSocket.Close();
             threadLive = false;
+            ServerManager.Inst.MatchQueue.ThreadLive = false;
         }
     }
 }

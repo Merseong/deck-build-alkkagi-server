@@ -20,6 +20,9 @@ namespace alkkagi_server
         public HashSet<User> removedUserListBuffer; // Socket Close전에 버퍼에 담아 한번에 처리
         private HashSet<GameRoom> gameRoomList;
 
+        private MatchQueue match;
+        public MatchQueue MatchQueue => match;
+
         public User waitingUser = null;
 
         protected override void Init()
@@ -27,25 +30,14 @@ namespace alkkagi_server
             userList = new HashSet<User>();
             removedUserListBuffer = new HashSet<User>();
             gameRoomList = new HashSet<GameRoom>();
+            match = new MatchQueue();
             threadLive = true;
         }
 
-        public GameRoom EnterGameRoom(User user)
+        public void EnterGameRoom(User user1, User user2)
         {
-            if (waitingUser == null)
-            {
-                waitingUser = user;
-                return null;
-            }
-            else
-            {
-                var newRoom = new GameRoom(waitingUser, user);
-                gameRoomList.Add(newRoom);
-
-                waitingUser = null;
-
-                return newRoom;
-            }
+            var newRoom = new GameRoom(user1, user2);
+            gameRoomList.Add(newRoom);
         }
 
         public void OnNewClient(Socket clientSocket, object eventArgs)
