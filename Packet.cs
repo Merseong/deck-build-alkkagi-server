@@ -9,22 +9,22 @@ namespace alkkagi_server
 {
     public class Packet
     {
-        public Int16 m_type { get; set; }
-        public byte[] m_data { get; set; }
+        public Int16 Type { get; set; }
+        public byte[] Data { get; set; }
         public Packet() { }
 
         public void SetData(byte[] data, int len)
         {
-            m_data = new byte[len];
-            Array.Copy(data, m_data, len);
+            Data = new byte[len];
+            Array.Copy(data, Data, len);
         }
 
         public byte[] GetSendBytes()
         {
-            byte[] type_bytes = BitConverter.GetBytes(m_type);
-            int header_size = (int)(m_data.Length);
+            byte[] type_bytes = BitConverter.GetBytes(Type);
+            int header_size = (int)(Data.Length);
             byte[] header_bytes = BitConverter.GetBytes(header_size);
-            byte[] send_bytes = new byte[header_bytes.Length + type_bytes.Length + m_data.Length];
+            byte[] send_bytes = new byte[header_bytes.Length + type_bytes.Length + Data.Length];
 
             //헤더 복사. 헤더 == 데이터의 크기
             Array.Copy(header_bytes, 0, send_bytes, 0, header_bytes.Length);
@@ -33,7 +33,7 @@ namespace alkkagi_server
             Array.Copy(type_bytes, 0, send_bytes, header_bytes.Length, type_bytes.Length);
 
             //데이터 복사
-            Array.Copy(m_data, 0, send_bytes, header_bytes.Length + type_bytes.Length, m_data.Length);
+            Array.Copy(Data, 0, send_bytes, header_bytes.Length + type_bytes.Length, Data.Length);
 
             return send_bytes;
         }
@@ -72,11 +72,11 @@ namespace alkkagi_server
     [StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Unicode)]
     public class PacketRes : Data<PacketRes>
     {
-        public bool m_is_sucess;
-        public int m_test_int_value;
+        public bool isSucess;
+        public int testIntValue;
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 100)]
-        public string m_message = "";
+        public string message = "";
 
         public PacketRes() { }
     }
@@ -97,7 +97,7 @@ namespace alkkagi_server
     public class TestPacket : Data<TestPacket>
     {
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 100)]
-        public string m_message;
+        public string message;
 
         public TestPacket() { }
     }
@@ -106,9 +106,9 @@ namespace alkkagi_server
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public class MessagePacket : Data<MessagePacket>
     {
-        public int m_senderid;
+        public int senderID;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 100)]
-        public string m_message;
+        public string message;
 
         public MessagePacket() { }
     }

@@ -11,36 +11,38 @@ namespace alkkagi_server
     public class ServerManager : Singleton<ServerManager>
     {
         public bool threadLive { get; set; }
-        public int m_nextUid = 1;
-        public int m_nextRoomId = 1;
+        private int nextID = 1;
+        private int nextRoomID = 1;
+        public int NextId { get { return nextID++; } }
+        public int NextRoomID { get { return nextRoomID++; } }
 
-        HashSet<User> userList;
-        public List<User> userListBuffer;
-        HashSet<GameRoom> m_gameRoomList;
+        private HashSet<User> userList;
+        public HashSet<User> removedUserListBuffer; // Socket Close전에 버퍼에 담아 한번에 처리
+        private HashSet<GameRoom> gameRoomList;
 
-        public User m_waiting = null;
+        public User waitingUser = null;
 
         protected override void Init()
         {
             userList = new HashSet<User>();
-            userListBuffer = new List<User>();
-            m_gameRoomList = new HashSet<GameRoom>();
+            removedUserListBuffer = new HashSet<User>();
+            gameRoomList = new HashSet<GameRoom>();
             threadLive = true;
         }
 
         public GameRoom EnterGameRoom(User user)
         {
-            if (m_waiting == null)
+            if (waitingUser == null)
             {
-                m_waiting = user;
+                waitingUser = user;
                 return null;
             }
             else
             {
-                var newRoom = new GameRoom(m_waiting, user);
-                m_gameRoomList.Add(newRoom);
+                var newRoom = new GameRoom(waitingUser, user);
+                gameRoomList.Add(newRoom);
 
-                m_waiting = null;
+                waitingUser = null;
 
                 return newRoom;
             }
@@ -54,11 +56,6 @@ namespace alkkagi_server
             // User는 db에서 가져온 데이터 저장하는 객체, 유저의 정보 보유
             User user = new User(token);
             token.User = user;
-
-            token.Socket = clientSocket;
-            token.Socket.NoDelay = true;
-            token.Socket.ReceiveTimeout = 60 * 1000;
-            token.Socket.SendTimeout = 60 * 1000;
 
             token.StartReceive();
 
@@ -81,20 +78,20 @@ namespace alkkagi_server
         {
             foreach (var user in userList)
             {
-                user.m_token.Update();
+                user.UserToken.Update();
             }
         }
 
         private void DeleteUser()
         {
-            foreach (var user in userListBuffer)
+            foreach (var user in removedUserListBuffer)
             {
-                user.m_token.Close();
+                user.UserToken.Close();
                 userList.Remove(user);
                 Console.WriteLine($"User counter: {userList.Count()}");
             }
 
-            userListBuffer.Clear();
+            removedUserListBuffer.Clear();
         }
 
         public void Notify(Packet packet, User sender)
@@ -103,7 +100,7 @@ namespace alkkagi_server
             {
                 if (user == sender) continue;
 
-                user.m_token.Send(packet);
+                user.UserToken.Send(packet);
             }
         }
     }

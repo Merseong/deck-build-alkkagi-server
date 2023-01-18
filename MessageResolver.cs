@@ -84,7 +84,7 @@ namespace alkkagi_server
 
             // 데이터가 완성되면 패킷으로 변환
             Packet packet = new Packet();
-            packet.m_type = mMessageType;
+            packet.Type = mMessageType;
             packet.SetData(mMessageBuffer, mMessageSize);
 
             mCompletedCallback(packet);

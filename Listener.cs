@@ -11,28 +11,28 @@ namespace alkkagi_server
 {
     public class Listener
     {
-        SocketAsyncEventArgs mAcceptArgs;
-        Socket mListenSocket;
-        AutoResetEvent mFlowControlEvent;
-        bool mThreadLive { get; set; }
+        SocketAsyncEventArgs acceptArgs;
+        Socket listenSocket;
+        AutoResetEvent flowControlEvent;
+        bool threadLive { get; set; }
 
         public delegate void NewClientHandler(Socket clientSocket, object token);
-        public NewClientHandler mCallbackOnNewClient;
+        public NewClientHandler callbackOnNewClient;
 
         public Listener()
         {
-            mCallbackOnNewClient = null;
-            mThreadLive = true;
+            callbackOnNewClient = null;
+            threadLive = true;
         }
 
         public void StartServer(string host, int port, int backlog)
         {
             // Open socket    
-            mListenSocket = new Socket(AddressFamily.InterNetwork,
+            listenSocket = new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream,
                 ProtocolType.Tcp);
 
-            mListenSocket.NoDelay = true;
+            listenSocket.NoDelay = true;
 
             IPAddress address;
 
@@ -45,11 +45,11 @@ namespace alkkagi_server
 
             try
             {
-                mListenSocket.Bind(endPoint);
-                mListenSocket.Listen(backlog);
+                listenSocket.Bind(endPoint);
+                listenSocket.Listen(backlog);
 
-                mAcceptArgs = new SocketAsyncEventArgs();
-                mAcceptArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnAcceptCompleted);
+                acceptArgs = new SocketAsyncEventArgs();
+                acceptArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnAcceptCompleted);
 
                 // 별도의 스레드에서
                 Thread listenThread = new Thread(DoListen);
@@ -63,17 +63,17 @@ namespace alkkagi_server
 
         private void DoListen()
         {
-            mFlowControlEvent = new AutoResetEvent(false);
+            flowControlEvent = new AutoResetEvent(false);
             Console.WriteLine("Thread is running");
 
-            while (mThreadLive)
+            while (threadLive)
             {
-                mAcceptArgs.AcceptSocket = null;
+                acceptArgs.AcceptSocket = null;
                 bool pending = true;
 
                 try
                 {
-                    pending = mListenSocket.AcceptAsync(mAcceptArgs);
+                    pending = listenSocket.AcceptAsync(acceptArgs);
                 }
                 catch (Exception e)
                 {
@@ -82,9 +82,9 @@ namespace alkkagi_server
                 }
 
                 if (!pending)
-                    OnAcceptCompleted(null, mAcceptArgs);
+                    OnAcceptCompleted(null, acceptArgs);
 
-                mFlowControlEvent.WaitOne();
+                flowControlEvent.WaitOne();
             }
         }
 
@@ -96,16 +96,17 @@ namespace alkkagi_server
 
                 ServerManager.Inst.OnNewClient(clientSocket, e);
 
-                mFlowControlEvent.Set();
+                flowControlEvent.Set();
             }
             else
             {
             }
         }
 
-        public void Close()
+        public void StopServer()
         {
-            mListenSocket.Close();
+            listenSocket.Close();
+            threadLive = false;
         }
     }
 }

@@ -9,32 +9,32 @@ namespace alkkagi_server
     public class GameRoom
     {
         // 게임 룸
-        public int m_gameRoomId;
-        public List<User> m_userList;
+        public int gameRoomID;
+        public List<User> userList;
 
         public GameRoom(User user1, User user2)
         {
-            m_gameRoomId = ServerManager.Inst.m_nextRoomId++;
-            m_userList = new List<User>()
+            gameRoomID = ServerManager.Inst.NextRoomID;
+            userList = new List<User>()
             {
                 user1,
                 user2
             };
-            user1.m_room = this;
-            user2.m_room = this;
-            Console.WriteLine("Room Created with " + user1.m_uid + ", " + user2.m_uid);
+            user1.Room = this;
+            user2.Room = this;
+            Console.WriteLine("Room Created with " + user1.UID + ", " + user2.UID);
         }
 
         public void SendToOpponent(int sender, string message)
         {
             var toSend = new MessagePacket();
-            toSend.m_senderid = sender;
-            toSend.m_message = message;
+            toSend.senderID = sender;
+            toSend.message = message;
             var sendPacket = new Packet();
-            sendPacket.m_type = (short)PacketType.ROOM_OPPONENT;
+            sendPacket.Type = (short)PacketType.ROOM_OPPONENT;
             var toSendSerial = toSend.Serialize();
             sendPacket.SetData(toSendSerial, toSendSerial.Length);
-            m_userList.Find(e => e.m_uid != sender).m_token.Send(sendPacket);
+            userList.Find(e => e.UID != sender).UserToken.Send(sendPacket);
         }
     }
 }

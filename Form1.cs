@@ -46,7 +46,7 @@ namespace alkkagi_server
                 return;
             }
             Console.WriteLine("OFF");
-            listener.Close();
+            listener.StopServer();
             isServerActive = false;
         }
     }
