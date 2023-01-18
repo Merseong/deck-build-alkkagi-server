@@ -49,8 +49,7 @@ namespace alkkagi_server
         public void OnNewClient(Socket clientSocket, object eventArgs)
         {
             // UserToken은 유저 연결 시 해당 소켓 저장 및 메세지 송수신 기능
-            UserToken token = new UserToken();
-            token.Init();
+            UserToken token = new UserToken(clientSocket);
 
             // User는 db에서 가져온 데이터 저장하는 객체, 유저의 정보 보유
             User user = new User(token);

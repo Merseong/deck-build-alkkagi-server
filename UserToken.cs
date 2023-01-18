@@ -19,17 +19,28 @@ namespace alkkagi_server
         List<Packet> mPacketList = new List<Packet>(5);
         object mMutextPacketList = new object();
 
-        public UserToken()
-        {
-            mMessageResolver = new MessageResolver();
-        }
+        SocketAsyncEventArgs m_send_event_args;
 
-        public void Init()
+        Queue<Packet> m_send_packet_queue = new Queue<Packet>(100);
+        object m_mutex_send_list = new object();
+
+        public UserToken(Socket socket)
         {
+            mSocket = socket;
+            mMessageResolver = new MessageResolver();
+
             mReceiveEventArgs = new SocketAsyncEventArgs();
             mReceiveEventArgs.Completed += OnReceiveCompleted;
             mReceiveEventArgs.UserToken = this;
 
+            m_send_event_args = new SocketAsyncEventArgs();
+            m_send_event_args.Completed += OnSendCompleted;
+            m_send_event_args.UserToken = this;
+
+            //byte배열을 크게 미리 세팅하고, 그 배열을 재사용한다.
+            //args.SetBuffer(m_buffer, m_current_index, m_buffer_size);
+            //아래 따로 코드 첨부
+            BufferManager.Inst.SetBuffer(m_send_event_args);
             BufferManager.Inst.SetBuffer(mReceiveEventArgs);
         }
 
@@ -45,20 +56,70 @@ namespace alkkagi_server
 
         public void Send(Packet packet)
         {
-            // 서버에서 유저로 패킷 전송
-            // Buffer나 pooling 처리 필요??
-            SocketAsyncEventArgs sendEventArgs = new SocketAsyncEventArgs();
+            if (mSocket == null)
+            {
+                return;
+            }
 
-            // 전송이 완료되면 OnSendCompleted 콜백함수 호출
-            sendEventArgs.Completed += OnSendCompleted;
-            sendEventArgs.UserToken = this;
+            lock (m_mutex_send_list)
+            {
+                //수신 중인 패킷이 없으면 바로, 전송
+                if (m_send_packet_queue.Count < 1)
+                {
+                    m_send_packet_queue.Enqueue(packet);
+                    SendProcess();
+                    return;
+                }
 
-            byte[] sendData = packet.GetSendBytes();
-            sendEventArgs.SetBuffer(sendData, 0, sendData.Length);
+                //수신 중인 패킷이 있으면, 큐에 넣고 나감.
+                //쌓인 패킷이 100개가 넘으면 그 다음부터는 무시함. 제 겜은 그래도 됨..        
+                if (m_send_packet_queue.Count < 100)
+                    m_send_packet_queue.Enqueue(packet);
+            }
+        }
 
-            bool pending = mSocket.SendAsync(sendEventArgs);
-            if (!pending)
-                OnSendCompleted(null, sendEventArgs);
+        private void SendProcess()
+        {
+            if (mSocket == null)
+            {
+                return;
+            }
+
+            Packet packet = m_send_packet_queue.Peek();
+            byte[] send_data = packet.GetSendBytes();
+
+            int data_len = send_data.Length;
+
+            if (data_len > 4096)
+            {
+                SocketAsyncEventArgs send_event_args = new SocketAsyncEventArgs();
+                if (send_event_args == null)
+                {
+                    Console.WriteLine("SocketAsyncEventArgsPool::Pop() result is null");
+                    return;
+                }
+
+                send_event_args.Completed += OnSendCompletedPooling;
+                send_event_args.UserToken = this;
+                send_event_args.SetBuffer(send_data, 0, send_data.Length);
+
+                bool pending = mSocket.SendAsync(send_event_args);
+                if (!pending)
+                    OnSendCompletedPooling(null, send_event_args);
+            }
+            else
+            {
+                //버퍼풀에서 설정한 크기보다 작은 경우(4K 이하)
+
+                //버퍼를 설정
+                m_send_event_args.SetBuffer(m_send_event_args.Offset, send_data.Length);
+                //버퍼에 데이터 복사
+                Array.Copy(send_data, 0, m_send_event_args.Buffer, m_send_event_args.Offset, send_data.Length);
+
+                bool pending = mSocket.SendAsync(m_send_event_args);
+                if (!pending)
+                    OnSendCompleted(null, m_send_event_args);
+            }
         }
 
         private void OnReceiveCompleted(object sender, SocketAsyncEventArgs e)
@@ -72,6 +133,11 @@ namespace alkkagi_server
             }
             else
             {
+                Console.WriteLine(e.SocketError.ToString());
+                Packet packet = new Packet();
+                packet.m_type = (Int16)PacketType.PACKET_USER_CLOSED;
+
+                AddPacket(packet);
             }
         }
 
@@ -79,14 +145,36 @@ namespace alkkagi_server
         {
             if (e.SocketError == SocketError.Success)
             {
-                // 전송 성공
-            }
-            else
-            {
+                lock (m_mutex_send_list)
+                {
+                    if (m_send_packet_queue.Count > 0)
+                        m_send_packet_queue.Dequeue();
 
+                    if (m_send_packet_queue.Count > 0)
+                        SendProcess();
+                }
             }
 
             // 나중에 pooling 처리 필요 (메모리 릭 막기 위함)
+        }
+
+        private void OnSendCompletedPooling(object sender, SocketAsyncEventArgs e)
+        {
+            if (e.SocketError == SocketError.Success)
+            {
+                //LogManager.Debug("onSendComplected Thread ID: " + Thread.CurrentThread.ManagedThreadId);
+                lock (m_mutex_send_list)
+                {
+                    if (m_send_packet_queue.Count > 0)
+                        m_send_packet_queue.Dequeue();
+
+                    if (m_send_packet_queue.Count > 0)
+                        SendProcess();
+                }
+            }
+            else
+            {
+            }
         }
 
         private void OnMessageCompleted(Packet packet)
@@ -101,6 +189,7 @@ namespace alkkagi_server
             {
                 mPacketList.Add(packet);
             }
+            Update();
         }
 
         //다른 스레드에서 호출된다.
@@ -124,6 +213,7 @@ namespace alkkagi_server
                         //잘못된 패킷이 들어온 경우 처리
                         //
                         Console.WriteLine(e.Message);
+                        Console.WriteLine(e.StackTrace);
                     }
                 }
             }
@@ -151,12 +241,49 @@ namespace alkkagi_server
             mUser = null;
             mMessageResolver.ClearBuffer();
 
-            // 버퍼 재사용 위해 버퍼 비워줌
-            BufferManager.Inst.FreeBuffer(mReceiveEventArgs);
+            lock (mMutextPacketList)
+            {
+                mPacketList.Clear();
+            }
 
-            if (mReceiveEventArgs != null)
+            lock (m_mutex_send_list)
+            {
+                m_send_packet_queue.Clear();
+            }
+
+            //수신 객체 해제
+            {
+                BufferManager.Inst.FreeBuffer(mReceiveEventArgs);
+                mReceiveEventArgs.SetBuffer(null, 0, 0);
+                if (mReceiveEventArgs.BufferList != null)
+                    mReceiveEventArgs.BufferList = null;
+
+                mReceiveEventArgs.UserToken = null;
+                mReceiveEventArgs.RemoteEndPoint = null;
+                mReceiveEventArgs.Completed -= OnReceiveCompleted;
+
                 mReceiveEventArgs.Dispose();
-            mReceiveEventArgs = null;
+                //풀링하지 않는 경우엔 반드시, m_send_event_args.Dispose();
+
+                mReceiveEventArgs = null;
+            }
+
+            //송신 객체 해제
+            {
+                BufferManager.Inst.FreeBuffer(m_send_event_args);
+
+                if (m_send_event_args.BufferList != null)
+                    m_send_event_args.BufferList = null;
+
+                m_send_event_args.UserToken = null;
+                m_send_event_args.RemoteEndPoint = null;
+                m_send_event_args.Completed -= OnSendCompleted;
+
+                m_send_event_args.Dispose();
+                //풀링하지 않는 경우엔 반드시, m_send_event_args.Dispose();
+
+                m_send_event_args = null;
+            }
         }
     }
 
@@ -206,7 +333,7 @@ namespace alkkagi_server
                     break;
                 case PacketType.TEST_PACKET:
                 default:
-                    message = TestPacket.Deserialize(packet.m_data).message;
+                    message = TestPacket.Deserialize(packet.m_data).m_message;
                     Console.WriteLine(message);
                     m_token.Send(packet);
                     break;

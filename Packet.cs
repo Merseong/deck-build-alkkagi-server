@@ -93,13 +93,11 @@ namespace alkkagi_server
     }
 
     [Serializable]
-    [StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public class TestPacket : Data<TestPacket>
     {
-        public bool isSucess;
-
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 1000)]
-        public string message;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 100)]
+        public string m_message;
 
         public TestPacket() { }
     }
