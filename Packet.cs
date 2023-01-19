@@ -89,6 +89,8 @@ namespace alkkagi_server
         ROOM_BROADCAST,
         ROOM_OPPONENT,
         ROOM_ENTER,
+        SYNCVAR_INIT,
+        SYNCVAR_CHANGE,
         PACKET_COUNT
     }
 
@@ -111,5 +113,16 @@ namespace alkkagi_server
         public string message;
 
         public MessagePacket() { }
+    }
+
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public class SyncVarPacket : Data<SyncVarPacket>
+    {
+        public uint NetID;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 100)]
+        public byte[] Data;
+
+        public SyncVarPacket() { }
     }
 }

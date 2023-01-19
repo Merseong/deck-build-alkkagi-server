@@ -10,7 +10,8 @@ namespace alkkagi_server
     {
         // 게임 룸
         public int gameRoomID;
-        public List<User> userList;
+        private List<User> userList;
+        private Dictionary<uint, byte[]> syncVarDataDict = new Dictionary<uint, byte[]>();
 
         public GameRoom(User user1, User user2)
         {
@@ -22,7 +23,41 @@ namespace alkkagi_server
             };
             user1.Room = this;
             user2.Room = this;
+
+            var packet = new Packet();
+            packet.Type = (Int16)PacketType.ROOM_ENTER;
+            packet.SetData(new byte[] {0}, 1);
+            user1.UserToken.Send(packet);
+            user2.UserToken.Send(packet);
+
             Console.WriteLine("Room Created with " + user1.UID + ", " + user2.UID);
+        }
+
+        public void InitSyncVar(User sender, SyncVarPacket packet)
+        {
+            var netID = packet.NetID;
+            if (syncVarDataDict.ContainsKey(netID)) return; // Todo: 패킷 보낸 클라이언트에게 SyncVar 값 다시 전송해야함
+
+            syncVarDataDict[netID] = packet.Data;
+        }
+
+        public void ChangeSyncVar(User sender, SyncVarPacket packet)
+        {
+            var netID = packet.NetID;
+            if (!syncVarDataDict.ContainsKey(netID)) return;
+
+            syncVarDataDict[netID] = packet.Data;
+
+            foreach (var user in userList)
+            {
+                if (user == sender) continue;
+
+                var sendPacket = new Packet();
+                sendPacket.Type = (Int16)PacketType.SYNCVAR_CHANGE;
+                var data = packet.Serialize();
+                sendPacket.SetData(data, data.Length);
+                user.UserToken.Send(sendPacket);
+            }
         }
 
         public void SendToOpponent(int sender, string message)

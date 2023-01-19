@@ -341,6 +341,14 @@ namespace alkkagi_server
                             new MatchQueue.Ticket(this, 1000, DateTime.Now));
                     }
                     break;
+                case PacketType.SYNCVAR_INIT:
+                    if (Room == null) return;
+                    Room.InitSyncVar(this, SyncVarPacket.Deserialize(packet.Data));
+                    break;
+                case PacketType.SYNCVAR_CHANGE:
+                    if (Room == null) return;
+                    Room.ChangeSyncVar(this, SyncVarPacket.Deserialize(packet.Data));
+                    break;
                 case PacketType.TEST_PACKET:
                 default:
                     message = TestPacket.Deserialize(packet.Data).message;
