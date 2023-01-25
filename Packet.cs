@@ -85,7 +85,7 @@ namespace alkkagi_server
     {
         UNDEFINED,
         PACKET_USER_CLOSED,
-        TEST_PACKET,
+        PACKET_TEST,
         ROOM_BROADCAST,
         ROOM_OPPONENT,
         ROOM_ENTER,

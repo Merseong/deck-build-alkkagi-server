@@ -349,7 +349,7 @@ namespace alkkagi_server
                     if (Room == null) return;
                     Room.ChangeSyncVar(this, SyncVarPacket.Deserialize(packet.Data));
                     break;
-                case PacketType.TEST_PACKET:
+                case PacketType.PACKET_TEST:
                 default:
                     message = TestPacket.Deserialize(packet.Data).message;
                     Console.WriteLine(message);
