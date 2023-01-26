@@ -15,6 +15,9 @@ namespace alkkagi_server
         MessageResolver messageResolver;
         Socket socket;
 
+        public delegate void OnMessageCompletedDelegate(User user, Packet p);
+        public OnMessageCompletedDelegate OnMessageCompleted;
+
         List<Packet> packetList = new List<Packet>(5);
         object mutexPacketList = new object();
 
@@ -35,6 +38,11 @@ namespace alkkagi_server
             receiveEventArgs = new SocketAsyncEventArgs();
             receiveEventArgs.Completed += OnReceiveCompleted;
             receiveEventArgs.UserToken = this;
+
+            OnMessageCompleted = new OnMessageCompletedDelegate((_, p) =>
+            {
+                Console.WriteLine($"[{user.UID}] receive packet with type '{(PacketType)p.Type}'");
+            });
 
             sendEventArgs = new SocketAsyncEventArgs();
             sendEventArgs.Completed += OnSendCompleted;
@@ -130,7 +138,7 @@ namespace alkkagi_server
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
                 // 전송 성공
-                messageResolver.OnReceive(e.Buffer, e.Offset, e.BytesTransferred, OnMessageCompleted);
+                messageResolver.OnReceive(e.Buffer, e.Offset, e.BytesTransferred, OnMessageCompletedCallback);
 
                 StartReceive();
             }
@@ -180,9 +188,9 @@ namespace alkkagi_server
             }
         }
 
-        private void OnMessageCompleted(Packet packet)
+        private void OnMessageCompletedCallback(Packet packet)
         {
-            AddPacket(packet);
+            OnMessageCompleted(user, packet);
         }
 
         private void AddPacket(Packet packet)
@@ -192,7 +200,6 @@ namespace alkkagi_server
             {
                 packetList.Add(packet);
             }
-            Update();
         }
 
         //다른 스레드에서 호출된다.
