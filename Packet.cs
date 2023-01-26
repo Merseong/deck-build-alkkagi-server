@@ -13,6 +13,15 @@ namespace alkkagi_server
         public byte[] Data { get; set; }
         public Packet() { }
 
+        public Packet Pack<T>(PacketType type, Data<T> data) where T : class
+        {
+            Type = (short)type;
+            var serializedData = data.Serialize();
+            SetData(serializedData, serializedData.Length);
+
+            return this;
+        }
+
         public void SetData(byte[] data, int len)
         {
             Data = new byte[len];
