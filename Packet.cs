@@ -96,16 +96,34 @@ namespace alkkagi_server
         PACKET_USER_CLOSED,
         PACKET_TEST,
         /// <summary>
-        /// MessagePacket(임시)<br/>
         /// 접속한 유저에게 기본 정보를 알려주기 위해 사용
         /// </summary>
+        /// <remarks>
+        /// MessagePacket(임시)<br/>
+        /// senderId 송신 -> 해당 플레이어의 networkID
+        /// </remarks>
         PACKET_INFO,
         ROOM_BROADCAST,
+        /// <summary>
+        /// 룸의 상대편에게 메세지를 보낼 때 사용
+        /// </summary>
+        /// <remarks>
+        /// MessagePacket<br/>
+        /// senderId: 보내는 사람<br/>
+        /// message: 보낼 내용
+        /// </remarks>
         ROOM_OPPONENT,
         /// <summary>
-        /// MessagePacket<br/>
         /// 룸 컨트롤(참여, 퇴장 등)시 사용
         /// </summary>
+        /// <remarks>
+        /// MessagePacket<br/>
+        /// ENTER
+        /// ENTERED
+        /// LOADED
+        /// START
+        /// EXIT
+        /// </remarks>
         ROOM_CONTROL,
         SYNCVAR_INIT,
         SYNCVAR_CHANGE,
@@ -118,8 +136,6 @@ namespace alkkagi_server
     {
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 100)]
         public string message;
-
-        public TestPacket() { }
     }
 
     [Serializable]
@@ -129,8 +145,6 @@ namespace alkkagi_server
         public int senderID;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 100)]
         public string message;
-
-        public MessagePacket() { }
     }
 
     [Serializable]
@@ -140,7 +154,5 @@ namespace alkkagi_server
         public uint NetID;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 100)]
         public byte[] Data;
-
-        public SyncVarPacket() { }
     }
 }

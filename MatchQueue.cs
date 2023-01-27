@@ -45,7 +45,7 @@ namespace alkkagi_server
                         var ticketPair = ticketList.OrderBy(g => Guid.NewGuid()).Take(2).ToArray();
 
                         ServerManager.Inst.EnterGameRoom(ticketPair[0].user, ticketPair[1].user);
-                        Console.WriteLine($"User1 id: {ticketPair[0].user.UID}, User2 id: {ticketPair[1].user.UID}");
+                        //Console.WriteLine($"User1 id: {ticketPair[0].user.UID}, User2 id: {ticketPair[1].user.UID}");
 
                         ticketList.Remove(ticketPair[0]);
                         ticketList.Remove(ticketPair[1]);

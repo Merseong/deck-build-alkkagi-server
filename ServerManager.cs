@@ -59,9 +59,9 @@ namespace alkkagi_server
         {
             foreach (var user in removedUserListBuffer)
             {
-                user.UserToken.Close();
                 userList.Remove(user);
                 Console.WriteLine($"User counter: {userList.Count()}");
+                user.UserToken.Close();
             }
 
             removedUserListBuffer.Clear();
@@ -154,7 +154,6 @@ namespace alkkagi_server
             switch(message.message)
             {
                 case "LOADED":
-                    // TODO: 게임을 시작
                     if (user.Room.ReadyId < 0) user.Room.ReadyId = message.senderID;
                     if (user.Room.ReadyId != message.senderID) user.Room.StartGame();
                     break;
@@ -181,18 +180,20 @@ namespace alkkagi_server
 
         private void BasicProcessPacket(User user, Packet packet)
         {
-            var token = user.UserToken;
-            string message;
-
             switch((PacketType)packet.Type)
             {
                 case PacketType.PACKET_USER_CLOSED:
-                    token.Close();
+                    if (user.Room != null)
+                    {
+                        user.Room.BreakRoom(user);
+                    }
+
+                    removedUserListBuffer.Add(user);
                     break;
                 case PacketType.PACKET_TEST:
-                    message = TestPacket.Deserialize(packet.Data).message;
+                    var message = TestPacket.Deserialize(packet.Data).message;
                     Console.WriteLine($"[{user.UID}] PACKET_TEST: {message}");
-                    token.Send(packet);
+                    user.UserToken.Send(packet);
                     break;
             }
         }

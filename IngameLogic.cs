@@ -46,9 +46,11 @@ namespace alkkagi_server
             user.Room = this;
             ServerManager.Inst.ApplyRoomIncluded(user);
 
-            var toSend = new MessagePacket();
-            toSend.senderID = 0;
-            toSend.message = $"{gameRoomID} ENTERED";
+            var toSend = new MessagePacket
+            {
+                senderID = 0,
+                message = $"ENTERED {gameRoomID}"
+            };
             var packet = new Packet().Pack(PacketType.ROOM_CONTROL, toSend);
             user.UserToken.Send(packet);
 
@@ -63,30 +65,36 @@ namespace alkkagi_server
             return true;
         }
 
-        public bool BreakRoom()
+        public bool BreakRoom(User breaker)
         {
             userList.ForEach(u =>
             {
                 u.Room = null;
+                var exitData = new MessagePacket
+                {
+                    senderID = 0,
+                    message = $"EXIT {breaker.UID}"
+                };
+                Packet packet;
+
                 switch (status)
                 {
                     case GameRoomStatus.INIT:
-                        // TODO: 그냥 방폭
-                        break;
                     case GameRoomStatus.READY:
-                        // TODO: 그냥 방폭
+                        packet = new Packet().Pack(PacketType.ROOM_CONTROL, exitData);
+                        u.UserToken.Send(packet);
                         break;
                     case GameRoomStatus.RUNNING:
-                        // TODO: 추가 패킷을 통해 룸에서 나가졌다고 얘기해야함
-                        // 나간 쪽의 패배 선언을 보내야 함
-                        break;
                     case GameRoomStatus.FINISH:
-                        // TODO: 적당히 방폭
-                        break;
-                    default:
+                        exitData.message += $" {(u.UID == breaker.UID ? 'L' : 'W')}";
+                        packet = new Packet().Pack(PacketType.ROOM_CONTROL, exitData);
+                        u.UserToken.Send(packet);
                         break;
                 }
             });
+
+            userList.Clear();
+            syncVarDataDict.Clear();
 
             return true;
         }
@@ -98,7 +106,7 @@ namespace alkkagi_server
 
             var startData = new MessagePacket();
             startData.senderID = 0;
-            startData.message = $"{ReadyId} START";
+            startData.message = $"START {ReadyId}";
             var startPacket = new Packet().Pack(PacketType.ROOM_CONTROL, startData);
             userList.ForEach(u => 
             {
