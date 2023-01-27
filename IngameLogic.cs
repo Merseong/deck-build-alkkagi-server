@@ -21,6 +21,7 @@ namespace alkkagi_server
         public int GameRoomID => gameRoomID;
         private GameRoomStatus status;
         public GameRoomStatus RoomStatus => status;
+        public int ReadyId = -1;
 
         private List<User> userList = new List<User>(2);
         private Dictionary<uint, byte[]> syncVarDataDict = new Dictionary<uint, byte[]>();
@@ -43,10 +44,12 @@ namespace alkkagi_server
 
             userList.Add(user);
             user.Room = this;
+            ServerManager.Inst.ApplyRoomIncluded(user);
 
-            var packet = new Packet();
-            packet.Type = (Int16)PacketType.ROOM_ENTER;
-            packet.SetData(new byte[] { 0 }, 1);
+            var toSend = new MessagePacket();
+            toSend.senderID = 0;
+            toSend.message = $"{gameRoomID} ENTERED";
+            var packet = new Packet().Pack(PacketType.ROOM_CONTROL, toSend);
             user.UserToken.Send(packet);
 
             Console.WriteLine($"[room{gameRoomID}] {user.UID} entered");
@@ -88,6 +91,31 @@ namespace alkkagi_server
             return true;
         }
 
+        public void StartGame()
+        {
+            ReadyId = userList[0].UID;
+            status = GameRoomStatus.RUNNING;
+
+            var startData = new MessagePacket();
+            startData.senderID = 0;
+            startData.message = $"{ReadyId} START";
+            var startPacket = new Packet().Pack(PacketType.ROOM_CONTROL, startData);
+            userList.ForEach(u => 
+            {
+                u.UserToken.ProcessPacket += ReceiveRoomOpponent;
+
+                u.UserToken.Send(startPacket);
+            });
+        }
+
+        private void ReceiveRoomOpponent(User u, Packet p)
+        {
+            if (p.Type != (short)PacketType.ROOM_OPPONENT) return;
+
+            var target = GetOpponentUser(u);
+            target.UserToken.Send(p);
+        }
+
         public User GetOpponentUser(User u)
         {
             if (status == GameRoomStatus.INIT) return null;
@@ -122,18 +150,6 @@ namespace alkkagi_server
                 sendPacket.SetData(data, data.Length);
                 user.UserToken.Send(sendPacket);
             }
-        }
-
-        public void SendToOpponent(int sender, string message)
-        {
-            var toSend = new MessagePacket();
-            toSend.senderID = sender;
-            toSend.message = message;
-            var sendPacket = new Packet();
-            sendPacket.Type = (short)PacketType.ROOM_OPPONENT;
-            var toSendSerial = toSend.Serialize();
-            sendPacket.SetData(toSendSerial, toSendSerial.Length);
-            userList.Find(e => e.UID != sender).UserToken.Send(sendPacket);
         }
     }
 }

@@ -15,8 +15,8 @@ namespace alkkagi_server
         MessageResolver messageResolver;
         Socket socket;
 
-        public delegate void OnMessageCompletedDelegate(User user, Packet p);
-        public OnMessageCompletedDelegate OnMessageCompleted;
+        public delegate void ProcessPacketDelegate(User user, Packet p);
+        public ProcessPacketDelegate ProcessPacket;
 
         List<Packet> packetList = new List<Packet>(5);
         object mutexPacketList = new object();
@@ -39,7 +39,7 @@ namespace alkkagi_server
             receiveEventArgs.Completed += OnReceiveCompleted;
             receiveEventArgs.UserToken = this;
 
-            OnMessageCompleted = new OnMessageCompletedDelegate((_, p) =>
+            ProcessPacket = new ProcessPacketDelegate((_, p) =>
             {
                 Console.WriteLine($"[{user.UID}] receive packet with type '{(PacketType)p.Type}'");
             });
@@ -190,7 +190,7 @@ namespace alkkagi_server
 
         private void OnMessageCompletedCallback(Packet packet)
         {
-            OnMessageCompleted(user, packet);
+            AddPacket(packet);
         }
 
         private void AddPacket(Packet packet)
@@ -206,7 +206,6 @@ namespace alkkagi_server
         //때문에 패킷 리스트에 넣고, 처리하기 전에 락을 걸어준다.
         public void Update()
         {
-
             //완성된 패킷을 매 루프 처리해 준다.
             if (packetList.Count > 0)
             {
@@ -215,7 +214,7 @@ namespace alkkagi_server
                     try
                     {
                         foreach (Packet packet in packetList)
-                            user.ProcessPacket(packet);
+                            ProcessPacket(user, packet);
                         packetList.Clear();
                     }
                     catch (Exception e)
@@ -314,55 +313,6 @@ namespace alkkagi_server
             UID = ServerManager.Inst.NextId;
 
             data = new UserData();
-        }
-
-        public void ProcessPacket(Packet packet)
-        {
-            if (packet.Type == (short)PacketType.PACKET_USER_CLOSED)
-            {
-                token.Close();
-                return;
-            }
-
-            var message = "";
-
-            switch ((PacketType)packet.Type)
-            {
-                case PacketType.PACKET_USER_CLOSED:
-                    token.Close();
-                    break;
-                case PacketType.ROOM_BROADCAST:
-                case PacketType.ROOM_OPPONENT:
-                    message = MessagePacket.Deserialize(packet.Data).message;
-                    if (Room != null)
-                    {
-                        Console.WriteLine(UID + ") send message \"" + message + "\"");
-                        Room.SendToOpponent(UID, message);
-                    }
-                    break;
-                case PacketType.ROOM_ENTER:
-                    if (Room == null)
-                    {
-                        Console.WriteLine(UID + ") is matchmaking");
-                        ServerManager.Inst.MatchQueue.AddTicket(
-                            new MatchQueue.Ticket(this, 1000, DateTime.Now));
-                    }
-                    break;
-                case PacketType.SYNCVAR_INIT:
-                    if (Room == null) return;
-                    Room.InitSyncVar(this, SyncVarPacket.Deserialize(packet.Data));
-                    break;
-                case PacketType.SYNCVAR_CHANGE:
-                    if (Room == null) return;
-                    Room.ChangeSyncVar(this, SyncVarPacket.Deserialize(packet.Data));
-                    break;
-                case PacketType.PACKET_TEST:
-                default:
-                    message = TestPacket.Deserialize(packet.Data).message;
-                    Console.WriteLine(message);
-                    token.Send(packet);
-                    break;
-            }
         }
     }
 

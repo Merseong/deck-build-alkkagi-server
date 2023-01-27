@@ -95,9 +95,18 @@ namespace alkkagi_server
         UNDEFINED,
         PACKET_USER_CLOSED,
         PACKET_TEST,
+        /// <summary>
+        /// MessagePacket(임시)<br/>
+        /// 접속한 유저에게 기본 정보를 알려주기 위해 사용
+        /// </summary>
+        PACKET_INFO,
         ROOM_BROADCAST,
         ROOM_OPPONENT,
-        ROOM_ENTER,
+        /// <summary>
+        /// MessagePacket<br/>
+        /// 룸 컨트롤(참여, 퇴장 등)시 사용
+        /// </summary>
+        ROOM_CONTROL,
         SYNCVAR_INIT,
         SYNCVAR_CHANGE,
         PACKET_COUNT
