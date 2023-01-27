@@ -70,6 +70,9 @@ namespace alkkagi_server
             userList.ForEach(u =>
             {
                 u.Room = null;
+                u.UserToken.ProcessPacket -= ReceiveRoomOpponent;
+                ServerManager.Inst.ApplyRoomIncluded(u);
+
                 var exitData = new MessagePacket
                 {
                     senderID = 0,

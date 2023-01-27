@@ -121,6 +121,12 @@ namespace alkkagi_server
                 user.UserToken.ProcessPacket -= ReceiveRoomEnter;
                 user.UserToken.ProcessPacket += ReceiveRoomControl;
             }
+            else
+            {
+                user.UserToken.ProcessPacket -= ReceiveRoomEnter;
+                user.UserToken.ProcessPacket -= ReceiveRoomControl;
+                user.UserToken.ProcessPacket += ReceiveRoomEnter;
+            }
         }
 
         // on receive room_enter packet from user

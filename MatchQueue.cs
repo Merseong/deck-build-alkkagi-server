@@ -27,6 +27,7 @@ namespace alkkagi_server
         {
             lock (mutexTicketList)
             {
+                if (ticketList.Contains(ticket)) return;
                 ticketList.Add(ticket);
             }
         }
