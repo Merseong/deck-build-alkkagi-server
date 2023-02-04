@@ -11,7 +11,14 @@ namespace alkkagi_server
     {
         public Int16 Type { get; set; }
         public byte[] Data { get; set; }
+
         public Packet() { }
+
+        public Packet(Packet p)
+        {
+            Type = p.Type;
+            Array.Copy(p.Data, Data, p.Data.Length);
+        }
 
         public Packet Pack<T>(PacketType type, Data<T> data) where T : class
         {
@@ -145,6 +152,13 @@ namespace alkkagi_server
         public int senderID;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 100)]
         public string message;
+
+        public MessagePacket() { }
+        public MessagePacket(MessagePacket msg)
+        {
+            senderID = msg.senderID;
+            message = msg.message;
+        }
     }
 
     [Serializable]

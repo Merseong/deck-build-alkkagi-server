@@ -77,6 +77,7 @@ namespace alkkagi_server
                 //수신 중인 패킷이 없으면 바로, 전송
                 if (sendPacketQueue.Count < 1)
                 {
+                    Console.WriteLine($"[{user.UID}] {((PacketType)packet.Type).ToString()} send");
                     sendPacketQueue.Enqueue(packet);
                     SendProcess();
                     return;
@@ -85,7 +86,11 @@ namespace alkkagi_server
                 //수신 중인 패킷이 있으면, 큐에 넣고 나감.
                 //쌓인 패킷이 100개가 넘으면 그 다음부터는 무시함. 제 겜은 그래도 됨..        
                 if (sendPacketQueue.Count < 100)
+                {
+                    Console.WriteLine($"[{user.UID}] {((PacketType)packet.Type).ToString()} send");
                     sendPacketQueue.Enqueue(packet);
+                }
+
             }
         }
 

@@ -78,12 +78,7 @@ namespace alkkagi_server
 
             token.StartReceive();
 
-            var infoData = new MessagePacket();
-            infoData.senderID = user.UID;
-            infoData.message = "";
-            var infoPacket = new Packet().Pack(PacketType.PACKET_INFO, infoData);
-            token.Send(infoPacket);
-
+            token.ProcessPacket += ReceiveFirstPacket;
             token.ProcessPacket += BasicProcessPacket;
             token.ProcessPacket += SyncVarActions;
             token.ProcessPacket += ReceiveRoomEnter;
@@ -167,6 +162,17 @@ namespace alkkagi_server
                     // TODO: 방에서 나가기
                     break;
             }
+        }
+
+        private void ReceiveFirstPacket(User u, Packet _)
+        {
+            var infoData = new MessagePacket();
+            infoData.senderID = u.UID;
+            infoData.message = "";
+            var infoPacket = new Packet().Pack(PacketType.PACKET_INFO, infoData);
+            u.UserToken.Send(infoPacket);
+
+            u.UserToken.ProcessPacket -= ReceiveFirstPacket;
         }
 
         private void SyncVarActions(User user, Packet packet)

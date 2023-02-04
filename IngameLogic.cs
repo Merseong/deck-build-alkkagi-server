@@ -114,6 +114,7 @@ namespace alkkagi_server
             userList.ForEach(u => 
             {
                 u.UserToken.ProcessPacket += ReceiveRoomOpponent;
+                u.UserToken.ProcessPacket += ReceiveRoomBroadcast;
 
                 u.UserToken.Send(startPacket);
             });
@@ -125,6 +126,39 @@ namespace alkkagi_server
 
             var target = GetOpponentUser(u);
             target.UserToken.Send(p);
+        }
+
+        private void ReceiveRoomBroadcast(User u, Packet p)
+        {
+            if (p.Type != (short)PacketType.ROOM_BROADCAST) return;
+
+            var msg = MessagePacket.Deserialize(p.Data);
+            var msg_sender = new MessagePacket(msg);
+            var msg_receiver = new MessagePacket(msg);
+
+            // turn end logic
+            if (msg.message.StartsWith("TURNEND/"))
+            {
+                // { ROOM_BROADCAST | networkId | TURNEND/ nextTotalTurn stonePosition localnextturnState OpppNextTurnState }
+                var msgArr = msg.message.Split(' ');
+
+                // { ROOM_BROADCAST | 0 | TURNEND / nextTotalTurn stonePosition LocalNextTurnState oppo(임시) }
+                msg_sender.senderID = 0;
+                msg_sender.message = $"TURNEND/ {msgArr[1]} {msgArr[2]} {msgArr[3]} {msgArr[4]}";
+                msg_receiver.senderID = 0;
+                msg_receiver.message = $"TURNEND/ {msgArr[1]} {msgArr[2]} {msgArr[4]} {msgArr[3]}";
+            }
+
+            if (u.UID == userList[0].UID)
+            {
+                userList[0].UserToken.Send(new Packet().Pack(PacketType.ROOM_BROADCAST, msg_sender));
+                userList[1].UserToken.Send(new Packet().Pack(PacketType.ROOM_BROADCAST, msg_receiver));
+            }
+            else
+            {
+                userList[1].UserToken.Send(new Packet().Pack(PacketType.ROOM_BROADCAST, msg_sender));
+                userList[0].UserToken.Send(new Packet().Pack(PacketType.ROOM_BROADCAST, msg_receiver));
+            }
         }
 
         public User GetOpponentUser(User u)
