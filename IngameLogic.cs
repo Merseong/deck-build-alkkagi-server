@@ -71,6 +71,7 @@ namespace alkkagi_server
             {
                 u.Room = null;
                 u.UserToken.ProcessPacket -= ReceiveRoomOpponent;
+                u.UserToken.ProcessPacket -= ReceiveRoomBroadcast;
                 ServerManager.Inst.ApplyRoomIncluded(u);
 
                 var exitData = new MessagePacket
@@ -122,7 +123,8 @@ namespace alkkagi_server
 
         private void ReceiveRoomOpponent(User u, Packet p)
         {
-            if (p.Type != (short)PacketType.ROOM_OPPONENT) return;
+            if (p.Type != (short)PacketType.ROOM_OPPONENT &&
+                p.Type != (short)PacketType.ROOM_OPPO_SHOOTSTONE) return;
 
             var target = GetOpponentUser(u);
             target.UserToken.Send(p);

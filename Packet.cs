@@ -121,6 +121,10 @@ namespace alkkagi_server
         /// </remarks>
         ROOM_OPPONENT,
         /// <summary>
+        /// ShootStonePacket<br/> 돌의 움직임에 관한 패킷
+        /// </summary>
+        ROOM_OPPO_SHOOTSTONE,
+        /// <summary>
         /// 룸 컨트롤(참여, 퇴장 등)시 사용
         /// </summary>
         /// <remarks>
@@ -178,10 +182,14 @@ namespace alkkagi_server
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 50)]
         public VelocityRecord[] velocityRecords = new VelocityRecord[50];
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 50)]
-        public PositionRecord[] positionRecords = new PositionRecord[50];
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 50)]
-        public EventRecord[] eventRecords = new EventRecord[50];
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 30)]
+        public PositionRecord[] positionRecords = new PositionRecord[30];
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 30)]
+        public EventRecord[] eventRecords = new EventRecord[30];
+
+        public short velocityCount;
+        public short positionCount;
+        public short eventCount;
     }
 
     [Serializable]
