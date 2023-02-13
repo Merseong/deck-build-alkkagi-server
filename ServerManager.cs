@@ -81,7 +81,7 @@ namespace alkkagi_server
             token.ProcessPacket += ReceiveFirstPacket;
             token.ProcessPacket += BasicProcessPacket;
             token.ProcessPacket += SyncVarActions;
-            token.ProcessPacket += ReceiveRoomEnter;
+            token.ProcessPacket += ReceiveMatchmakingEnter;
 
             // Add user to userList
             userList.Add(user);
@@ -113,19 +113,19 @@ namespace alkkagi_server
         {
             if (user.Room != null)
             {
-                user.UserToken.ProcessPacket -= ReceiveRoomEnter;
+                user.UserToken.ProcessPacket -= ReceiveMatchmakingEnter;
                 user.UserToken.ProcessPacket += ReceiveRoomControl;
             }
             else
             {
-                user.UserToken.ProcessPacket -= ReceiveRoomEnter;
+                user.UserToken.ProcessPacket -= ReceiveMatchmakingEnter;
                 user.UserToken.ProcessPacket -= ReceiveRoomControl;
-                user.UserToken.ProcessPacket += ReceiveRoomEnter;
+                user.UserToken.ProcessPacket += ReceiveMatchmakingEnter;
             }
         }
 
         // on receive room_enter packet from user
-        private void ReceiveRoomEnter(User user, Packet p)
+        private void ReceiveMatchmakingEnter(User user, Packet p)
         {
             if (p.Type != (short)PacketType.ROOM_CONTROL) return;
 
@@ -156,10 +156,10 @@ namespace alkkagi_server
             {
                 case "LOADED":
                     if (user.Room.ReadyId < 0) user.Room.ReadyId = message.senderID;
-                    if (user.Room.ReadyId != message.senderID) user.Room.StartGame();
+                    else if (user.Room.ReadyId != message.senderID) user.Room.StartGame();
                     break;
-                case "EXIT":
-                    // TODO: 방에서 나가기
+                case "BREAK":
+                    user.Room.BreakRoom(user);
                     break;
             }
         }

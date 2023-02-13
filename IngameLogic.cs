@@ -77,7 +77,7 @@ namespace alkkagi_server
                 var exitData = new MessagePacket
                 {
                     senderID = 0,
-                    message = $"EXIT {breaker.UID}"
+                    message = $"EXIT/ {breaker.UID}"
                 };
                 Packet packet;
 
