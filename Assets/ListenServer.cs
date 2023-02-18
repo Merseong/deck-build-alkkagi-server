@@ -7,6 +7,7 @@ using Unity.Collections;
 public class ListenServer : SingletonBehaviour<ListenServer>
 {
     [SerializeField] private bool isWebSocketServer;
+    [SerializeField] private ushort port = 3333;
 
     NetworkDriver driver;
     NetworkPipeline pipeline;
@@ -41,10 +42,10 @@ public class ListenServer : SingletonBehaviour<ListenServer>
         resolver = new MessageResolver();
         sendQueue = new();
 
-        var endpoint = NetworkEndpoint.AnyIpv4.WithPort(3333);
+        var endpoint = NetworkEndpoint.AnyIpv4.WithPort(port);
         if (driver.Bind(endpoint) != 0)
         {
-            MyDebug.LogError("Failed to bind to port 3333.");
+            MyDebug.LogError($"Failed to bind to port {port}.");
             return;
         }
         driver.Listen();
@@ -79,7 +80,8 @@ public class ListenServer : SingletonBehaviour<ListenServer>
                     var buffer = new NativeArray<byte>(stream.Length, Allocator.Temp);
                     stream.ReadBytes(buffer);
                     resolver.OnReceive(buffer.ToArray(), 0, stream.GetBytesRead(), (p) => {
-                        MyDebug.Log($"[{tokens[i].UID}] receive {(PacketType)p.Type}");
+                        if (!MainServer.Inst.DisableReceiveLog)
+                            MyDebug.Log($"[{tokens[i].UID}] receive {(PacketType)p.Type}");
                         tokens[i].AppendReceivedPacket(p);
                     });
                 }
@@ -106,7 +108,8 @@ public class ListenServer : SingletonBehaviour<ListenServer>
             writer.WriteBytes(byteArr);
             driver.EndSend(writer);
 
-            MyDebug.Log($"[{toSend.TargetId}] send {(PacketType)toSend.PacketToSend.Type}");
+            if (!MainServer.Inst.DisableSendLog)
+                MyDebug.Log($"[{toSend.TargetId}] send {(PacketType)toSend.PacketToSend.Type}");
         }
 
         // Clean up connections.

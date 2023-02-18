@@ -4,6 +4,13 @@ using UnityEngine;
 
 public class MainServer : SingletonBehaviour<MainServer>
 {
+    [Header("Debug Setting")]
+    public bool DisableLog = false;
+    public bool DisableLogWarning = false;
+    public bool DisableSendLog = false;
+    public bool DisableReceiveLog = false;
+
+
     private HashSet<UserToken> userList;
     public HashSet<UserToken> removedUserListBuffer; // Socket Close전에 버퍼에 담아 한번에 처리
     private HashSet<GameRoom> gameRoomList;
@@ -56,6 +63,10 @@ public class MainServer : SingletonBehaviour<MainServer>
     {
         foreach (var user in removedUserListBuffer)
         {
+            if (user.Room != null)
+            {
+                user.Room.BreakRoom(user);
+            }
             userList.Remove(user);
             ListenServer.Inst.DisconnectClient(user);
             user.Close();
@@ -125,7 +136,7 @@ public class MainServer : SingletonBehaviour<MainServer>
                 else if (user.Room.ReadyId != message.senderID) user.Room.StartGame();
                 break;
             case "BREAK":
-                user.Room.BreakRoom(user);
+                user.Room.EndGame(user);
                 break;
         }
     }

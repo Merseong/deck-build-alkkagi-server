@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51237f1a1b1dc174fb2db55b602c9f85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isWebSocketServer: 1
+  isWebSocketServer: 0
 --- !u!4 &1794734403
 Transform:
   m_ObjectHideFlags: 0
@@ -197,6 +197,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5be7f76e7bb512f40948a9f96310861c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DisableLog: 0
+  DisableLogWarning: 0
+  DisableSendLog: 1
+  DisableReceiveLog: 1
 --- !u!4 &1901401981
 Transform:
   m_ObjectHideFlags: 0

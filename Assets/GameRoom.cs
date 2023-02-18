@@ -96,6 +96,8 @@ public class GameRoom
         userList.Clear();
         syncVarDataDict.Clear();
 
+        MyDebug.Log($"[room{GameRoomID}] room breaked by {breaker.UID}, Endstate: {status}");
+
         return true;
     }
 
@@ -114,9 +116,13 @@ public class GameRoom
             u.AddOnReceivedDelegate(ReceiveRoomBroadcast, "RoomBroadcast");
 
             u.Send(startPacket);
-
-            MyDebug.Log("hi");
         });
+    }
+
+    public void EndGame(UserToken loser)
+    {
+        status = GameRoomStatus.FINISH;
+        BreakRoom(loser);
     }
 
     private void ReceiveRoomOpponent(UserToken u, Packet p)
@@ -137,6 +143,7 @@ public class GameRoom
         var msg_receiver = new MessagePacket(msg);
 
         // turn end logic
+        // TODO: 나중에 packet을 별개로 빼버리는것도 괜찮을듯
         if (msg.message.StartsWith("TURNEND/"))
         {
             // { ROOM_BROADCAST | networkId | TURNEND/ nextTotalTurn stonePosition localnextturnState OpppNextTurnState }

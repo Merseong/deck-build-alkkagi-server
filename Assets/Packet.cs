@@ -194,7 +194,7 @@ public class SyncVarPacket : Data<SyncVarPacket>
 }
 
 [Serializable]
-public class ShootStonePacket : Data<ShootStonePacket>
+public class StoneActionPacket : Data<StoneActionPacket>
 {
     public int senderID;
 
@@ -205,6 +205,9 @@ public class ShootStonePacket : Data<ShootStonePacket>
     public short velocityCount;
     public short positionCount;
     public short eventCount;
+
+    public short finalCost; // 최종 코스트
+    public short finalHand; // 최종 핸드
 }
 
 [Serializable]
@@ -230,13 +233,19 @@ public struct EventRecord
 {
     public float time;
     public int stoneId;
+    public string eventMessage;
     public EventEnum eventEnum; // -> EventEnum
+    public float xPosition;
+    public float zPosition;
 }
 
 [Serializable]
 public enum EventEnum
 {
+    NULL,
+    SPENDTOKEN,
     COLLIDE,
+    GUARDCOLLIDE,
     DROPOUT,
     POWER,
     COUNT,
