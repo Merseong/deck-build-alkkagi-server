@@ -71,3 +71,15 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+Assets/StreamingAssets
+Assets/Plugins/iOS
+Assets/Plugins/tvOS
+Assets/Plugins/iOS.meta
+Assets/Plugins/tvOS.meta
+Assets/Firebase
+Assets/ExternalDependencyManager
+Assets/Editor Default Resources
+Assets/Editor Default Resources.meta
+Assets/ExternalDependencyManager.meta
+Assets/Firebase.meta
+Assets/StreamingAssets.meta

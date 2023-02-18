@@ -13,16 +13,16 @@ public enum GameRoomStatus
 public class GameRoom
 {
     // °ÔÀÓ ·ë
-    private int gameRoomID;
-    public int GameRoomID => gameRoomID;
+    private uint gameRoomID;
+    public uint GameRoomID => gameRoomID;
     private GameRoomStatus status;
     public GameRoomStatus RoomStatus => status;
-    public int ReadyId = -1;
+    public uint ReadyId = 0;
 
     private List<UserToken> userList = new List<UserToken>(2);
     private Dictionary<uint, byte[]> syncVarDataDict = new Dictionary<uint, byte[]>();
 
-    public GameRoom(int roomId)
+    public GameRoom(uint roomId)
     {
         gameRoomID = roomId;
         status = GameRoomStatus.INIT;
@@ -128,7 +128,7 @@ public class GameRoom
     private void ReceiveRoomOpponent(UserToken u, Packet p)
     {
         if (p.Type != (short)PacketType.ROOM_OPPONENT &&
-            p.Type != (short)PacketType.ROOM_OPPO_SHOOTSTONE) return;
+            p.Type != (short)PacketType.ROOM_OPPO_STONEACTION) return;
 
         var target = GetOpponentUser(u);
         target.Send(p);

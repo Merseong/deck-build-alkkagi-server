@@ -15,8 +15,8 @@ public class MainServer : SingletonBehaviour<MainServer>
     public HashSet<UserToken> removedUserListBuffer; // Socket Close전에 버퍼에 담아 한번에 처리
     private HashSet<GameRoom> gameRoomList;
 
-    private int nextUid = 1;
-    private int nextRoomID = 1;
+    private uint nextUid = 1;
+    private uint nextRoomID = 1;
 
     private MatchQueue match;
     public MatchQueue MatchQueue => match;
@@ -46,17 +46,28 @@ public class MainServer : SingletonBehaviour<MainServer>
     {
         GameObject obj = new();
         var token = obj.AddComponent<UserToken>();
-        token.Login(nextUid++);
-        obj.name = $"Client{token.UID}";
+        obj.name = $"ClientNotLogined";
         userList.Add(token);
 
-        token.AddOnReceivedDelegate(ReceiveFirstPacket, "FirstPacket");
         token.AddOnReceivedDelegate(BasicProcessPacket);
-        token.AddOnReceivedDelegate(SyncVarActions);
-        token.AddOnReceivedDelegate(ReceiveMatchmakingEnter, "MatchmakingEnter");
+        token.AddOnReceivedDelegate(ReceiveLoginData, "Login");
 
-        MyDebug.Log($"Hello client! {token.UID}, User count: {userList.Count}");
+        MyDebug.Log($"Hello client! User count: {userList.Count}");
         return token;
+    }
+
+    public void OnLogin(UserToken u)
+    {
+        u.AddOnReceivedDelegate(ReceiveLogoutData, "Logout");
+        u.AddOnReceivedDelegate(SyncVarActions);
+        u.AddOnReceivedDelegate(ReceiveMatchmakingEnter, "MatchmakingEnter");
+        u.RemoveOnReceivedDelegate("Login");
+    }
+
+    public void OnLogout(UserToken u)
+    {
+        u.AddOnReceivedDelegate(ReceiveLoginData, "Login");
+        u.RemoveOnReceivedDelegate("Logout");
     }
 
     private void DeleteUser()
@@ -101,7 +112,6 @@ public class MainServer : SingletonBehaviour<MainServer>
         newRoom.UserEnter(user2);
     }
 
-    // on receive room_enter packet from user
     private void ReceiveMatchmakingEnter(UserToken user, Packet p)
     {
         if (p.Type != (short)PacketType.ROOM_CONTROL) return;
@@ -129,10 +139,17 @@ public class MainServer : SingletonBehaviour<MainServer>
 
         var message = MessagePacket.Deserialize(p.Data);
 
+        if (user.UID != message.senderID)
+        {
+            MyDebug.LogError($"[{user.UID}] sender id not matched!");
+            user.Room.BreakRoom(user);
+            return;
+        }
+
         switch (message.message)
         {
             case "LOADED":
-                if (user.Room.ReadyId < 0) user.Room.ReadyId = message.senderID;
+                if (user.Room.ReadyId == 0) user.Room.ReadyId = message.senderID;
                 else if (user.Room.ReadyId != message.senderID) user.Room.StartGame();
                 break;
             case "BREAK":
@@ -141,15 +158,35 @@ public class MainServer : SingletonBehaviour<MainServer>
         }
     }
 
-    private void ReceiveFirstPacket(UserToken u, Packet _)
+    private void ReceiveLoginData(UserToken u, Packet p)
     {
-        var infoData = new MessagePacket();
-        infoData.senderID = u.UID;
-        infoData.message = "";
-        var infoPacket = new Packet().Pack(PacketType.PACKET_INFO, infoData);
-        u.Send(infoPacket);
+        if (p.Type != (short)PacketType.USER_LOGIN) return;
+        var msg = MessagePacket.Deserialize(p.Data);
+        if (msg.senderID != 1) return;
 
-        u.RemoveOnReceivedDelegate("FirstPacket");
+        DatabaseManager.Inst.TryLogin(msg.message, (data, isSuccess) =>
+        {
+            var loginData = isSuccess ? DatabaseManager.Inst.PackUserData(data) : new UserDataPacket();
+            loginData.isSuccess = isSuccess;
+            var resPacket = new Packet().Pack(PacketType.USER_LOGIN, loginData);
+            u.Send(resPacket);
+
+            if (isSuccess)
+            {
+                //u.Login(data.uid);
+            }
+        });
+    }
+
+    private void ReceiveLogoutData(UserToken u, Packet p)
+    {
+        if (p.Type != (short)PacketType.USER_LOGIN) return;
+        var senderId = MessagePacket.Deserialize(p.Data).senderID;
+
+        if (senderId == 0)
+        {
+            u.Logout();
+        }
     }
 
     private void SyncVarActions(UserToken user, Packet packet)
@@ -169,20 +206,9 @@ public class MainServer : SingletonBehaviour<MainServer>
 
     private void BasicProcessPacket(UserToken user, Packet packet)
     {
-        switch ((PacketType)packet.Type)
-        {
-            case PacketType.PACKET_USER_CLOSED:
-                if (user.Room != null)
-                {
-                    user.Room.BreakRoom(user);
-                }
-                removedUserListBuffer.Add(user);
-                break;
-            case PacketType.PACKET_TEST:
-                var message = TestPacket.Deserialize(packet.Data).message;
-                MyDebug.Log($"[{user.UID}] PACKET_TEST: {message}");
-                user.Send(packet);
-                break;
-        }
+        if (packet.Type != (short)PacketType.PACKET_TEST) return;
+        var message = TestPacket.Deserialize(packet.Data).message;
+        MyDebug.Log($"[{user.UID}] PACKET_TEST: {message}");
+        user.Send(packet);
     }
 }

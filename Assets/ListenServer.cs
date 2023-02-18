@@ -150,7 +150,7 @@ public class ListenServer : SingletonBehaviour<ListenServer>
 
 public struct UserPacketPair
 {
-    public int TargetId;
+    public uint TargetId;
     public int TargetIndex;
     public Packet PacketToSend;
 

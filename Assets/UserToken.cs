@@ -6,8 +6,8 @@ using UnityEngine;
 
 public class UserToken : MonoBehaviour
 {
-    [SerializeField] private int userId = -1;
-    public int UID => userId;
+    [SerializeField] private uint userId = 0;
+    public uint UID => userId;
     public GameRoom Room;
 
     public int ServerIdx;
@@ -84,9 +84,22 @@ public class UserToken : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public void Login(int id)
+    public void Login(uint id)
     {
-        // 임시, 나중에는 직접 db열어보는 등등 해야됨
+        if (id != 0 && userId != 0) return;
         userId = id;
+        gameObject.name = $"Client{userId}";
+        MainServer.Inst.OnLogin(this);
+    }
+
+    public void Logout()
+    {
+        userId = 0;
+        gameObject.name = $"ClientNotLogined";
+        if (Room != null) Room.BreakRoom(this);
+        processPacket.Clear();
+        receivedPackets.Clear();
+        ProcessPacketDict.Clear();
+        MainServer.Inst.OnLogout(this);
     }
 }
