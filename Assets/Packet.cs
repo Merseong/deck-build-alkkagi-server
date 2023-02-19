@@ -201,7 +201,7 @@ public class SyncVarPacket : Data<SyncVarPacket>
 [Serializable]
 public class StoneActionPacket : Data<StoneActionPacket>
 {
-    public int senderID;
+    public uint senderID;
 
     public VelocityRecord[] velocityRecords;
     public PositionRecord[] positionRecords;

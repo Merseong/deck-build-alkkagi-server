@@ -89,6 +89,7 @@ public class UserToken : MonoBehaviour
         if (id != 0 && userId != 0) return;
         userId = id;
         gameObject.name = $"Client{userId}";
+        MyDebug.Log($"[{userId}] Login success");
         MainServer.Inst.OnLogin(this);
     }
 

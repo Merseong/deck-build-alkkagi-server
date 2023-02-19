@@ -10,14 +10,33 @@ public class DatabaseManager : SingletonBehaviour<DatabaseManager>
 {
     private DatabaseReference dbRef;
 
-    private void Start()
+    private void Awake()
     {
         dbRef = FirebaseDatabase.DefaultInstance.RootReference;
     }
 
-    public void FindUser(string sql, Action<UserDataSchema> callback)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="uid"></param>
+    /// <param name="callback">return null if user not exist</param>
+    public async void FindUser(uint uid, Action<UserDataSchema> callback)
     {
-        callback(new UserDataSchema());
+        if (uid == 0)
+        {
+            callback(null);
+            return;
+        }
+
+        var userSnapshot = await dbRef.Child("users").Child(uid.ToString()).GetValueAsync();
+        if (userSnapshot.Exists)
+        {
+            var user = JsonUtility.FromJson<UserDataSchema>(userSnapshot.GetRawJsonValue());
+            user.password = null;
+            callback(user);
+            return;
+        }
+        callback(null);
     }
 
     public async void TryLogin(string accountData, Action<UserDataSchema, bool> callback)
@@ -37,7 +56,19 @@ public class DatabaseManager : SingletonBehaviour<DatabaseManager>
 
     public UserDataPacket PackUserData(UserDataSchema data)
     {
-        return new UserDataPacket();
+        return new UserDataPacket
+        {
+            uid = data.uid,
+            deckUnlock = data.deckUnlock,
+            honorLose = data.honorLose,
+            honorPoint = data.honorPoint,
+            honorWin = data.honorWin,
+            lose = data.lose,
+            moneyPoint = data.moneyPoint,
+            nickname = data.nickname,
+            rating = data.rating,
+            win = data.win,
+        };
     }
 
     public async Task<UserDataSchema> FindByIdAsync(string id)
@@ -53,11 +84,17 @@ public class DatabaseManager : SingletonBehaviour<DatabaseManager>
 
     public async void RegisterUser(UserDataPacket newUser, string id, string password, Action<bool> callback)
     {
+        if (id.Contains('@'))
+        {
+            callback(false);
+            return;
+        }
         if (await FindByIdAsync(id) != null)
         {
             callback(false);
             return;
         }
+
         var newData = new UserDataSchema(newUser)
         {
             loginId = id,

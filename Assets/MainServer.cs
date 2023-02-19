@@ -59,6 +59,7 @@ public class MainServer : SingletonBehaviour<MainServer>
     public void OnLogin(UserToken u)
     {
         u.AddOnReceivedDelegate(ReceiveLogoutData, "Logout");
+        u.AddOnReceivedDelegate(ReceiveUserInfo, "UserInfo");
         u.AddOnReceivedDelegate(SyncVarActions);
         u.AddOnReceivedDelegate(ReceiveMatchmakingEnter, "MatchmakingEnter");
         u.RemoveOnReceivedDelegate("Login");
@@ -66,8 +67,8 @@ public class MainServer : SingletonBehaviour<MainServer>
 
     public void OnLogout(UserToken u)
     {
+        // after clear delegate list
         u.AddOnReceivedDelegate(ReceiveLoginData, "Login");
-        u.RemoveOnReceivedDelegate("Logout");
     }
 
     private void DeleteUser()
@@ -162,20 +163,47 @@ public class MainServer : SingletonBehaviour<MainServer>
     {
         if (p.Type != (short)PacketType.USER_LOGIN) return;
         var msg = MessagePacket.Deserialize(p.Data);
-        if (msg.senderID != 1) return;
 
-        DatabaseManager.Inst.TryLogin(msg.message, (data, isSuccess) =>
+        if (msg.senderID == 1) // login action
         {
-            var loginData = isSuccess ? DatabaseManager.Inst.PackUserData(data) : new UserDataPacket();
-            loginData.isSuccess = isSuccess;
-            var resPacket = new Packet().Pack(PacketType.USER_LOGIN, loginData);
-            u.Send(resPacket);
-
-            if (isSuccess)
+            DatabaseManager.Inst.TryLogin(msg.message, (data, isSuccess) =>
             {
-                //u.Login(data.uid);
+                var loginData = isSuccess ? DatabaseManager.Inst.PackUserData(data) : new UserDataPacket();
+                loginData.isSuccess = isSuccess;
+                var resPacket = new Packet().Pack(PacketType.USER_LOGIN, loginData);
+                u.Send(resPacket);
+
+                if (isSuccess)
+                {
+                    u.Login(data.uid);
+                }
+            });
+        }
+        else if (msg.senderID == 0) // register action
+        {
+            // msg.message => loginId password nickname
+            var dataArr = msg.message.Split(' ');
+            if (dataArr.Length != 3)
+            {
+                SendResponse("false");
+                return;
             }
-        });
+
+            DatabaseManager.Inst.RegisterUser(new UserDataPacket { nickname = dataArr[2] }, dataArr[0], dataArr[1], (isSuccess) =>
+            {
+                SendResponse(isSuccess ? "true" : "false");
+            });
+
+            void SendResponse(string msg)
+            {
+                var resPacket = new Packet().Pack(PacketType.USER_LOGIN, new MessagePacket
+                {
+                    senderID = 0,
+                    message = msg
+                });
+                u.Send(resPacket);
+            }
+        }
     }
 
     private void ReceiveLogoutData(UserToken u, Packet p)
@@ -187,6 +215,30 @@ public class MainServer : SingletonBehaviour<MainServer>
         {
             u.Logout();
         }
+    }
+
+    private void ReceiveUserInfo(UserToken sender, Packet p)
+    {
+        if (p.Type != (short)PacketType.USER_INFO) return;
+        uint toFindUid = MessagePacket.Deserialize(p.Data).senderID;
+        DatabaseManager.Inst.FindUser(toFindUid, (foundUser) =>
+        {
+            if (foundUser == null)
+            {
+                var resPacket = new Packet().Pack(PacketType.USER_INFO, new UserDataPacket
+                {
+                    isSuccess = false
+                });
+                sender.Send(resPacket);
+            }
+            else
+            {
+                var foundUserPacket = DatabaseManager.Inst.PackUserData(foundUser);
+                foundUserPacket.isSuccess = true;
+                var resPacket = new Packet().Pack(PacketType.USER_INFO, foundUserPacket);
+                sender.Send(resPacket);
+            }
+        });
     }
 
     private void SyncVarActions(UserToken user, Packet packet)
