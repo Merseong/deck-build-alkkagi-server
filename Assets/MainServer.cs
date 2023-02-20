@@ -76,7 +76,7 @@ public class MainServer : SingletonBehaviour<MainServer>
         {
             if (user.Room != null)
             {
-                user.Room.BreakRoom(user);
+                user.Room.EndGame(user);
             }
             userList.Remove(user);
             ListenServer.Inst.DisconnectClient(user);
@@ -143,7 +143,7 @@ public class MainServer : SingletonBehaviour<MainServer>
         if (user.UID != message.senderID)
         {
             MyDebug.LogError($"[{user.UID}] sender id not matched!");
-            user.Room.BreakRoom(user);
+            user.Room.EndGame(user);
             return;
         }
 

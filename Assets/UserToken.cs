@@ -104,7 +104,7 @@ public class UserToken : MonoBehaviour
     {
         userId = 0;
         gameObject.name = $"ClientNotLogined";
-        if (Room != null) Room.BreakRoom(this);
+        if (Room != null) Room.EndGame(this);
         processPacket.Clear();
         receivedPackets.Clear();
         ProcessPacketDict.Clear();

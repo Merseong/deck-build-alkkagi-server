@@ -64,7 +64,7 @@ public class GameRoom
         return true;
     }
 
-    public bool BreakRoom(UserToken breaker)
+    private bool BreakRoom(UserToken breaker)
     {
         userList.ForEach(u =>
         {
@@ -109,8 +109,8 @@ public class GameRoom
         ReadyId = userList[0].UID;
         status = GameRoomStatus.RUNNING;
 
-        // send to user1
-        var targetUser = userList[0];
+        // send to users
+        var startPackets = new Packet[2];
         var startData = new MessagePacket
         {
             senderID = 0,
@@ -118,23 +118,39 @@ public class GameRoom
             // 선턴ID 상대ID 내덱 상대덱장수
             // TODO: 서버에서도 덱 파싱이 가능하도록 해야됨
         };
-        var startPacket = new Packet().Pack(PacketType.ROOM_CONTROL, startData);
-        targetUser.AddOnReceivedDelegate(ReceiveRoomOpponent, "RoomOpponent");
-        targetUser.AddOnReceivedDelegate(ReceiveRoomBroadcast, "RoomBroadcast");
-        targetUser.Send(startPacket);
-
-        // send to user2
-        targetUser = userList[1];
+        startPackets[0] = new Packet().Pack(PacketType.ROOM_CONTROL, startData);
         startData.message = $"START/ {ReadyId} {userList[0].UID} {usingDeck[1]} {100}";
-        startPacket.Pack(PacketType.ROOM_CONTROL, startData);
-        targetUser.AddOnReceivedDelegate(ReceiveRoomOpponent, "RoomOpponent");
-        targetUser.AddOnReceivedDelegate(ReceiveRoomBroadcast, "RoomBroadcast");
-        targetUser.Send(startPacket);
+        startPackets[1] = new Packet().Pack(PacketType.ROOM_CONTROL, startData);
+        for (int i = 0; i < 2; ++i)
+        {
+            var targetUser = userList[i];
+            targetUser.AddOnReceivedDelegate(ReceiveRoomOpponent, "RoomOpponent");
+            targetUser.AddOnReceivedDelegate(ReceiveRoomBroadcast, "RoomBroadcast");
+            targetUser.Send(startPackets[i]);
+        }
     }
 
     public void EndGame(UserToken loser)
     {
-        status = GameRoomStatus.FINISH;
+        var winner = userList.Find(u => u != loser);
+        if (RoomStatus == GameRoomStatus.RUNNING)
+        {
+            status = GameRoomStatus.FINISH;
+            var loserDict = new Dictionary<string, object>
+            {
+                ["lose"] = loser.UserData.lose + 1,
+                ["moneyPoint"] = loser.UserData.moneyPoint + 1
+            };
+            DatabaseManager.Inst.UpdateUser(loser.UID, loserDict);
+
+            var winnerDict = new Dictionary<string, object>
+            {
+                ["win"] = winner.UserData.win + 1,
+                ["moneyPoint"] = winner.UserData.moneyPoint + 3
+            };
+            DatabaseManager.Inst.UpdateUser(winner.UID, winnerDict);
+        }
+
         BreakRoom(loser);
     }
 
