@@ -216,6 +216,7 @@ public class MainServer : SingletonBehaviour<MainServer>
 
         if (senderId == 0)
         {
+            Inst.MatchQueue.RemoveTicket(u);
             u.Logout();
         }
     }
@@ -265,9 +266,9 @@ public class MainServer : SingletonBehaviour<MainServer>
                 // 업데이트
                 var updateDict = new Dictionary<string, object>
                 {
-                    ["deckUnlock"] = uint.Parse(msgArr[1]),
+                    ["deckUnlock"] = msgArr[1],
                     ["moneyPoint"] = (uint)sender.UserData["moneyPoint"] - usedMoney,
-                    ["honorPoint"] = (uint)sender.UserData["moneyPoint"] - usedHonor,
+                    ["honorPoint"] = (uint)sender.UserData["honorPoint"] - usedHonor,
                 };
                 DatabaseManager.Inst.UpdateUser(sender.UID, updateDict);
                 sender.UpdateUserData(updateDict);
