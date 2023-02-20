@@ -42,7 +42,7 @@ public class MatchQueue
             {
                 var ticketPair = ticketList.OrderBy(g => System.Guid.NewGuid()).Take(2).ToArray();
 
-                MainServer.Inst.EnterGameRoom(ticketPair[0].user, ticketPair[1].user);
+                MainServer.Inst.EnterGameRoom(ticketPair[0], ticketPair[1]);
                 //Console.WriteLine($"User1 id: {ticketPair[0].user.UID}, User2 id: {ticketPair[1].user.UID}");
 
                 ticketList.Remove(ticketPair[0]);
@@ -58,12 +58,14 @@ public class MatchQueue
         public uint mmr;
         public float enterTime;
         public bool isExpired = false;
+        public string deckCode;
 
-        public Ticket(UserToken user, uint mmr, float enterTime)
+        public Ticket(UserToken user, string deckCode, uint mmr, float enterTime)
         {
             this.user = user;
             this.mmr = mmr;
             this.enterTime = enterTime;
+            this.deckCode = deckCode;
         }
     }
 }

@@ -50,7 +50,7 @@ public class DatabaseManager : SingletonBehaviour<DatabaseManager>
         }
         else
         {
-            callback(new UserDataSchema(), false);
+            callback(new UserDataSchema { loginId = loginData[0] }, false);
         }
     }
 

@@ -20,6 +20,7 @@ public class GameRoom
     public uint ReadyId = 0;
 
     private List<UserToken> userList = new List<UserToken>(2);
+    private string[] usingDeck = new string[2];
     private Dictionary<uint, byte[]> syncVarDataDict = new Dictionary<uint, byte[]>();
 
     public GameRoom(uint roomId)
@@ -30,7 +31,7 @@ public class GameRoom
         MyDebug.Log($"[MAIN] Room Created, room ID : {roomId}");
     }
 
-    public bool UserEnter(UserToken user)
+    public bool UserEnter(UserToken user, string deckCode)
     {
         // max player
         if (userList.Count > 2) return false;
@@ -38,6 +39,8 @@ public class GameRoom
         // 방 생성 초기에만 입장 가능
         if (status != GameRoomStatus.INIT) return false;
 
+        int idx = userList.Count;
+        usingDeck[idx] = deckCode;
         userList.Add(user);
         user.Room = this;
         MainServer.Inst.ApplyRoomIncluded(user);
@@ -45,7 +48,7 @@ public class GameRoom
         var toSend = new MessagePacket
         {
             senderID = 0,
-            message = $"ENTERED {gameRoomID}"
+            message = $"ENTERED/ {gameRoomID}"
         };
         var packet = new Packet().Pack(PacketType.ROOM_CONTROL, toSend);
         user.Send(packet);
@@ -106,17 +109,27 @@ public class GameRoom
         ReadyId = userList[0].UID;
         status = GameRoomStatus.RUNNING;
 
-        var startData = new MessagePacket();
-        startData.senderID = 0;
-        startData.message = $"START {ReadyId}";
-        var startPacket = new Packet().Pack(PacketType.ROOM_CONTROL, startData);
-        userList.ForEach(u =>
+        // send to user1
+        var targetUser = userList[0];
+        var startData = new MessagePacket
         {
-            u.AddOnReceivedDelegate(ReceiveRoomOpponent, "RoomOpponent");
-            u.AddOnReceivedDelegate(ReceiveRoomBroadcast, "RoomBroadcast");
+            senderID = 0,
+            message = $"START/ {ReadyId} {userList[1].UID} {usingDeck[0]} {100}"
+            // 선턴ID 상대ID 내덱 상대덱장수
+            // TODO: 서버에서도 덱 파싱이 가능하도록 해야됨
+        };
+        var startPacket = new Packet().Pack(PacketType.ROOM_CONTROL, startData);
+        targetUser.AddOnReceivedDelegate(ReceiveRoomOpponent, "RoomOpponent");
+        targetUser.AddOnReceivedDelegate(ReceiveRoomBroadcast, "RoomBroadcast");
+        targetUser.Send(startPacket);
 
-            u.Send(startPacket);
-        });
+        // send to user2
+        targetUser = userList[1];
+        startData.message = $"START/ {ReadyId} {userList[0].UID} {usingDeck[1]} {100}";
+        startPacket.Pack(PacketType.ROOM_CONTROL, startData);
+        targetUser.AddOnReceivedDelegate(ReceiveRoomOpponent, "RoomOpponent");
+        targetUser.AddOnReceivedDelegate(ReceiveRoomBroadcast, "RoomBroadcast");
+        targetUser.Send(startPacket);
     }
 
     public void EndGame(UserToken loser)

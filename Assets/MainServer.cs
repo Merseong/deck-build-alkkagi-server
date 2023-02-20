@@ -15,7 +15,6 @@ public class MainServer : SingletonBehaviour<MainServer>
     public HashSet<UserToken> removedUserListBuffer; // Socket Close전에 버퍼에 담아 한번에 처리
     private HashSet<GameRoom> gameRoomList;
 
-    private uint nextUid = 1;
     private uint nextRoomID = 1;
 
     private MatchQueue match;
@@ -102,15 +101,14 @@ public class MainServer : SingletonBehaviour<MainServer>
         }
     }
 
-    public void EnterGameRoom(UserToken user1, UserToken user2)
+    public void EnterGameRoom(MatchQueue.Ticket user1, MatchQueue.Ticket user2)
     {
         var newRoom = new GameRoom(nextRoomID++);
         gameRoomList.Add(newRoom);
 
         // TODO: 랜덤으로 유저 1과 2중 한쪽을 먼저 enter시켜야함.
-
-        newRoom.UserEnter(user1);
-        newRoom.UserEnter(user2);
+        newRoom.UserEnter(user1.user, user1.deckCode);
+        newRoom.UserEnter(user2.user, user2.deckCode);
     }
 
     private void ReceiveMatchmakingEnter(UserToken user, Packet p)
@@ -118,13 +116,15 @@ public class MainServer : SingletonBehaviour<MainServer>
         if (p.Type != (short)PacketType.ROOM_CONTROL) return;
 
         var message = MessagePacket.Deserialize(p.Data);
-
-        switch (message.message)
+        var msgArr = message.message.Split(' ');
+        // ENTER/ (deckCode)
+        
+        switch (msgArr[0])
         {
-            case "ENTER":
+            case "ENTER/":
                 MyDebug.Log($"[{user.UID}] start matchmaking");
                 Inst.MatchQueue.AddTicket(
-                    new MatchQueue.Ticket(user, 1000, Time.time));
+                    new MatchQueue.Ticket(user, msgArr[1], 1000, Time.time));
                 break;
             case "EXIT":
                 Inst.MatchQueue.RemoveTicket(user);
@@ -175,8 +175,9 @@ public class MainServer : SingletonBehaviour<MainServer>
 
                 if (isSuccess)
                 {
-                    u.Login(data.uid);
+                    u.Login(data);
                 }
+                MyDebug.Log($"[id {data.loginId}] login {(isSuccess ? "success" : "failed")}");
             });
         }
         else if (msg.senderID == 0) // register action
@@ -192,6 +193,7 @@ public class MainServer : SingletonBehaviour<MainServer>
             DatabaseManager.Inst.RegisterUser(new UserDataPacket { nickname = dataArr[2] }, dataArr[0], dataArr[1], (isSuccess) =>
             {
                 SendResponse(isSuccess ? "true" : "false");
+                MyDebug.Log($"[id {dataArr[0]}] register {(isSuccess ? "success" : "failed")}");
             });
 
             void SendResponse(string msg)

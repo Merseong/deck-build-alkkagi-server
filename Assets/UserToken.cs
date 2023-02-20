@@ -12,6 +12,9 @@ public class UserToken : MonoBehaviour
 
     public int ServerIdx;
 
+    private UserDataSchema userData;
+    public UserDataSchema UserData => userData;
+
     public delegate void ProcessPacketDelegate(UserToken user, Packet p);
     private Dictionary<int, ProcessPacketDelegate> processPacket;
     private int nextProcessPacketId = 1;
@@ -84,10 +87,14 @@ public class UserToken : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public void Login(uint id)
+    public void Login(UserDataSchema userData)
     {
-        if (id != 0 && userId != 0) return;
-        userId = id;
+        if (userData.uid == 0) return;
+        if (userId != 0) return;
+
+        userId = userData.uid;
+        this.userData = userData;
+
         gameObject.name = $"Client{userId}";
         MyDebug.Log($"[{userId}] Login success");
         MainServer.Inst.OnLogin(this);

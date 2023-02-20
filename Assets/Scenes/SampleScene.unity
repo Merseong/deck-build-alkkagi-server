@@ -244,8 +244,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   DisableLog: 0
   DisableLogWarning: 0
-  DisableSendLog: 1
-  DisableReceiveLog: 1
+  DisableSendLog: 0
+  DisableReceiveLog: 0
 --- !u!4 &1901401981
 Transform:
   m_ObjectHideFlags: 0
