@@ -138,17 +138,19 @@ public class GameRoom
             status = GameRoomStatus.FINISH;
             var loserDict = new Dictionary<string, object>
             {
-                ["lose"] = loser.UserData.lose + 1,
-                ["moneyPoint"] = loser.UserData.moneyPoint + 1
+                ["lose"] = (uint)loser.UserData["lose"] + 1,
+                ["moneyPoint"] = (uint)loser.UserData["moneyPoint"] + 1
             };
             DatabaseManager.Inst.UpdateUser(loser.UID, loserDict);
+            loser.UpdateUserData(loserDict);
 
             var winnerDict = new Dictionary<string, object>
             {
-                ["win"] = winner.UserData.win + 1,
-                ["moneyPoint"] = winner.UserData.moneyPoint + 3
+                ["win"] = (uint)loser.UserData["win"] + 1,
+                ["moneyPoint"] = (uint)loser.UserData["moneyPoint"] + 3
             };
             DatabaseManager.Inst.UpdateUser(winner.UID, winnerDict);
+            winner.UpdateUserData(winnerDict);
         }
 
         BreakRoom(loser);

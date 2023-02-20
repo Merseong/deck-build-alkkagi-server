@@ -114,9 +114,15 @@ public class DatabaseManager : SingletonBehaviour<DatabaseManager>
         callback(true);
     }
 
-    public async void UpdateUser(uint uid, Dictionary<string, object> updateDict)
+    public async void UpdateUser(uint uid, Dictionary<string, object> updateDict, Action<UserDataSchema> callback = null)
     {
-        await dbRef.Child("users").Child(uid.ToString()).UpdateChildrenAsync(updateDict);
+        var userRef = dbRef.Child("users").Child(uid.ToString());
+        await userRef.UpdateChildrenAsync(updateDict);
+        if (callback != null)
+        {
+            var newDataSnapshot = await userRef.GetValueAsync();
+            callback.Invoke(JsonUtility.FromJson<UserDataSchema>(newDataSnapshot.GetRawJsonValue()));
+        }
         return;
     }
 }
@@ -132,7 +138,7 @@ public class UserDataSchema
     public uint win;
     public uint lose;
     public uint rating;
-    public uint deckUnlock;
+    public string deckUnlock;
     public uint moneyPoint;
     public uint honorPoint;
 
@@ -152,10 +158,12 @@ public class UserDataSchema
         honorPoint = packet.honorPoint;
     }
 
-    public Dictionary<string, object> GetUpdateDict()
+    public Dictionary<string, object> GetDict()
     {
         Dictionary<string, object> result = new Dictionary<string, object>();
         result["uid"] = uid;
+        result["loginIn"] = loginId;
+        result["nickname"] = nickname;
         result["honorWin"] = honorWin;
         result["honorLose"] = honorLose;
         result["win"] = win;

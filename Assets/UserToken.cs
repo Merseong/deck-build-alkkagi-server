@@ -12,8 +12,8 @@ public class UserToken : MonoBehaviour
 
     public int ServerIdx;
 
-    private UserDataSchema userData;
-    public UserDataSchema UserData => userData;
+    private Dictionary<string, object> userData;
+    public Dictionary<string, object> UserData => userData;
 
     public delegate void ProcessPacketDelegate(UserToken user, Packet p);
     private Dictionary<int, ProcessPacketDelegate> processPacket;
@@ -87,13 +87,22 @@ public class UserToken : MonoBehaviour
         Destroy(gameObject);
     }
 
+    public void UpdateUserData(Dictionary<string, object> toUpdate)
+    {
+        foreach (var key in toUpdate.Keys)
+        {
+            if (UserData.ContainsKey(key))
+                UserData[key] = toUpdate[key];
+        }
+    }
+
     public void Login(UserDataSchema userData)
     {
         if (userData.uid == 0) return;
         if (userId != 0) return;
 
         userId = userData.uid;
-        this.userData = userData;
+        this.userData = userData.GetDict();
 
         gameObject.name = $"Client{userId}";
         MyDebug.Log($"[{userId}] Login success");

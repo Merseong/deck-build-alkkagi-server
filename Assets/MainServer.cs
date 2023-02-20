@@ -59,6 +59,7 @@ public class MainServer : SingletonBehaviour<MainServer>
     {
         u.AddOnReceivedDelegate(ReceiveLogoutData, "Logout");
         u.AddOnReceivedDelegate(ReceiveUserInfo, "UserInfo");
+        u.AddOnReceivedDelegate(ReceiveUserAction, "UserAction");
         u.AddOnReceivedDelegate(SyncVarActions);
         u.AddOnReceivedDelegate(ReceiveMatchmakingEnter, "MatchmakingEnter");
         u.RemoveOnReceivedDelegate("Login");
@@ -241,6 +242,37 @@ public class MainServer : SingletonBehaviour<MainServer>
                 sender.Send(resPacket);
             }
         });
+    }
+
+    private void ReceiveUserAction(UserToken sender, Packet p)
+    {
+        if (p.Type != (short)PacketType.USER_ACTION) return;
+        var msg = MessagePacket.Deserialize(p.Data);
+        if (msg.senderID != sender.UID) return;
+
+        var msgArr = msg.message.Split(' ');
+        switch (msgArr[0])
+        {
+            case "SHOP/":
+                // 구매물품(구매후상태) 사용한돈 사용한명예포인트
+                // 검증
+                if (!uint.TryParse(msgArr[2], out var usedMoney) ||
+                    !uint.TryParse(msgArr[3], out var usedHonor))
+                    break;
+                if ((usedMoney > (uint)sender.UserData["moneyPoint"]) ||
+                    (usedHonor > (uint)sender.UserData["honorPoint"]))
+                    break;
+                // 업데이트
+                var updateDict = new Dictionary<string, object>
+                {
+                    ["deckUnlock"] = uint.Parse(msgArr[1]),
+                    ["moneyPoint"] = (uint)sender.UserData["moneyPoint"] - usedMoney,
+                    ["honorPoint"] = (uint)sender.UserData["moneyPoint"] - usedHonor,
+                };
+                DatabaseManager.Inst.UpdateUser(sender.UID, updateDict);
+                sender.UpdateUserData(updateDict);
+                break;
+        }
     }
 
     private void SyncVarActions(UserToken user, Packet packet)
