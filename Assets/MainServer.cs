@@ -129,9 +129,10 @@ public class MainServer : SingletonBehaviour<MainServer>
             case "ENTER/":
                 MyDebug.Log($"[{user.UID}] start matchmaking");
                 Inst.MatchQueue.AddTicket(
-                    new MatchQueue.Ticket(user, msgArr[1], 1000, Time.time));
+                    new MatchQueue.Ticket(user, msgArr[1], (uint)user.UserData["rating"], Time.time));
                 break;
-            case "EXIT":
+            case "EXIT/":
+                MyDebug.Log($"[{user.UID}] cancel matchmaking");
                 Inst.MatchQueue.RemoveTicket(user);
                 break;
             default:
