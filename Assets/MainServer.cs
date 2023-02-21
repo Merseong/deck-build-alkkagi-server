@@ -10,8 +10,9 @@ public class MainServer : SingletonBehaviour<MainServer>
     public bool DisableSendLog = false;
     public bool DisableReceiveLog = false;
 
-
-    private HashSet<UserToken> userList;
+    private HashSet<UserToken> connectedOnlyUserList;
+    private Dictionary<uint, UserToken> userList;
+    private string connectionCountString => $"{connectedOnlyUserList.Count} / {userList.Count} logined";
     public HashSet<UserToken> removedUserListBuffer; // Socket Close전에 버퍼에 담아 한번에 처리
     private HashSet<GameRoom> gameRoomList;
 
@@ -22,6 +23,7 @@ public class MainServer : SingletonBehaviour<MainServer>
 
     private void Awake()
     {
+        connectedOnlyUserList = new();
         userList = new();
         removedUserListBuffer = new();
         gameRoomList = new();
@@ -46,12 +48,12 @@ public class MainServer : SingletonBehaviour<MainServer>
         GameObject obj = new();
         var token = obj.AddComponent<UserToken>();
         obj.name = $"ClientNotLogined";
-        userList.Add(token);
+        connectedOnlyUserList.Add(token);
 
         token.AddOnReceivedDelegate(BasicProcessPacket);
         token.AddOnReceivedDelegate(ReceiveLoginData, "Login");
 
-        MyDebug.Log($"Hello client! User count: {userList.Count}");
+        MyDebug.Log($"Hello client! Connection : {connectionCountString}");
         return token;
     }
 
@@ -75,16 +77,18 @@ public class MainServer : SingletonBehaviour<MainServer>
     {
         foreach (var user in removedUserListBuffer)
         {
-            if (user.Room != null)
+            if (userList.TryGetValue(user.UID, out var foundUser) &&
+                foundUser == user)
             {
-                user.Room.EndGame(user);
+                userList.Remove(user.UID);
             }
-            userList.Remove(user);
+            connectedOnlyUserList.Remove(user);
+            user.Logout();
             ListenServer.Inst.DisconnectClient(user);
             user.Close();
         }
 
-        MyDebug.Log($"User counter: {userList.Count}");
+        MyDebug.Log($"Connection : {connectionCountString}");
         removedUserListBuffer.Clear();
     }
 
@@ -176,6 +180,18 @@ public class MainServer : SingletonBehaviour<MainServer>
 
                 if (isSuccess)
                 {
+                    connectedOnlyUserList.Remove(u);
+                    // find logined
+                    if (userList.TryGetValue(data.uid, out var loginedToken))
+                    {
+                        removedUserListBuffer.Add(loginedToken);
+                        userList[data.uid] = u;
+                    }
+                    else
+                    {
+                        userList.Add(data.uid, u);
+                    }
+
                     u.Login(data);
                 }
                 MyDebug.Log($"[id {data.loginId}] login {(isSuccess ? "success" : "failed")}");
@@ -216,7 +232,8 @@ public class MainServer : SingletonBehaviour<MainServer>
 
         if (senderId == 0)
         {
-            Inst.MatchQueue.RemoveTicket(u);
+            userList.Remove(u.UID);
+            connectedOnlyUserList.Add(u);
             u.Logout();
         }
     }

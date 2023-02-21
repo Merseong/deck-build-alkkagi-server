@@ -114,6 +114,7 @@ public class UserToken : MonoBehaviour
         userId = 0;
         userData = null;
         gameObject.name = $"ClientNotLogined";
+        MainServer.Inst.MatchQueue.RemoveTicket(this);
         if (Room != null) Room.EndGame(this);
         processPacket.Clear();
         receivedPackets.Clear();
