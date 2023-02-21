@@ -15,9 +15,6 @@ public class DatabaseManager : SingletonBehaviour<DatabaseManager>
         dbRef = FirebaseDatabase.DefaultInstance.RootReference;
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
     /// <param name="uid"></param>
     /// <param name="callback">return null if user not exist</param>
     public async void FindUser(uint uid, Action<UserDataSchema> callback)
@@ -125,6 +122,18 @@ public class DatabaseManager : SingletonBehaviour<DatabaseManager>
         }
         return;
     }
+
+    public async void ReportProblem(uint reporterUid, string message)
+    {
+        var report = new ReportSchema
+        {
+            Datetime = DateTime.UtcNow.ToString(),
+            ReporterUid = reporterUid,
+            Content = message,
+        };
+        var json = JsonUtility.ToJson(report);
+        await dbRef.Child("reports").Child($"{report.Datetime}-{reporterUid}").SetRawJsonValueAsync(json);
+    }
 }
 
 public class UserDataSchema
@@ -175,4 +184,11 @@ public class UserDataSchema
 
         return result;
     }
+}
+
+public class ReportSchema
+{
+    public string Datetime;
+    public uint ReporterUid;
+    public string Content;
 }

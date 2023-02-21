@@ -60,6 +60,7 @@ public class MainServer : SingletonBehaviour<MainServer>
     public void OnLogin(UserToken u)
     {
         u.AddOnReceivedDelegate(ReceiveLogoutData, "Logout");
+        u.AddOnReceivedDelegate(ReceiveProblemReportAction);
         u.AddOnReceivedDelegate(ReceiveUserInfo, "UserInfo");
         u.AddOnReceivedDelegate(ReceiveUserAction, "UserAction");
         u.AddOnReceivedDelegate(SyncVarActions);
@@ -292,6 +293,15 @@ public class MainServer : SingletonBehaviour<MainServer>
                 sender.UpdateUserData(updateDict);
                 break;
         }
+    }
+
+    private void ReceiveProblemReportAction(UserToken sender, Packet p)
+    {
+        if (p.Type != (short)PacketType.PROBLEM_REPORT) return;
+        var msg = MessagePacket.Deserialize(p.Data);
+        if (msg.senderID != sender.UID) return;
+
+        DatabaseManager.Inst.ReportProblem(sender.UID, msg.message);
     }
 
     private void SyncVarActions(UserToken user, Packet packet)

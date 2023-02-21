@@ -216,6 +216,7 @@ public class GameRoom
             else if (hsPlayerUid != hsPlayer)
             {
                 // problem happened
+                DatabaseManager.Inst.ReportProblem(0, $"[Room{GameRoomID}] hs player not matched!");
             }
         }
 
