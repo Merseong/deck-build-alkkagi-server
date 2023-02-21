@@ -21,6 +21,8 @@ public class GameRoom
 
     private List<UserToken> userList = new List<UserToken>(2);
     private string[] usingDeck = new string[2];
+
+    private uint hsPlayerUid = 0;
     private Dictionary<uint, byte[]> syncVarDataDict = new Dictionary<uint, byte[]>();
 
     public GameRoom(uint roomId)
@@ -136,19 +138,34 @@ public class GameRoom
         if (RoomStatus == GameRoomStatus.RUNNING)
         {
             status = GameRoomStatus.FINISH;
-            var loserDict = new Dictionary<string, object>
+            var loserDict = new Dictionary<string, object>();
+            var winnerDict = new Dictionary<string, object>();
+
+            if (hsPlayerUid == 0) // hs한 플레이어 없음
             {
-                ["lose"] = (uint)loser.UserData["lose"] + 1,
-                ["moneyPoint"] = (uint)loser.UserData["moneyPoint"] + 1
-            };
+                loserDict.Add("lose", (uint)loser.UserData["lose"] + 1);
+                winnerDict.Add("win", (uint)winner.UserData["win"] + 1);
+                loserDict.Add("moneyPoint", (uint)loser.UserData["moneyPoint"] + 1);
+                winnerDict.Add("moneyPoint", (uint)winner.UserData["moneyPoint"] + 3);
+            }
+            else // hs함
+            {
+                bool winnerWithHs = winner.UID == hsPlayerUid;
+                string loserDictKey = !winnerWithHs ? "honorLose" : "lose";
+                string winnerDictKey = winnerWithHs ? "honorWin" : "win";
+
+                loserDict.Add(loserDictKey, (uint)loser.UserData[loserDictKey] + 1);
+                winnerDict.Add(winnerDictKey, (uint)winner.UserData[winnerDictKey] + 1);
+                loserDict.Add("moneyPoint", (uint)loser.UserData["moneyPoint"] + 1);
+                winnerDict.Add("moneyPoint", (uint)winner.UserData["moneyPoint"] + 3);
+                if (winnerWithHs)
+                {
+                    winnerDict.Add("honorPoint", (uint)winner.UserData["honorPoint"] + 3);
+                }
+            }
+
             DatabaseManager.Inst.UpdateUser(loser.UID, loserDict);
             loser.UpdateUserData(loserDict);
-
-            var winnerDict = new Dictionary<string, object>
-            {
-                ["win"] = (uint)loser.UserData["win"] + 1,
-                ["moneyPoint"] = (uint)loser.UserData["moneyPoint"] + 3
-            };
             DatabaseManager.Inst.UpdateUser(winner.UID, winnerDict);
             winner.UpdateUserData(winnerDict);
         }
@@ -174,7 +191,6 @@ public class GameRoom
         var msg_receiver = new MessagePacket(msg);
 
         // turn end logic
-        // TODO: 나중에 packet을 별개로 빼버리는것도 괜찮을듯
         if (msg.message.StartsWith("TURNEND/"))
         {
             // { ROOM_BROADCAST | networkId | TURNEND/ nextTotalTurn stonePosition localnextturnState OpppNextTurnState }
@@ -185,6 +201,22 @@ public class GameRoom
             msg_sender.message = $"TURNEND/ {msgArr[1]} {msgArr[2]} {msgArr[3]} {msgArr[4]}";
             msg_receiver.senderID = 0;
             msg_receiver.message = $"TURNEND/ {msgArr[1]} {msgArr[2]} {msgArr[4]} {msgArr[3]}";
+        }
+
+        // hs player set
+        if (msg.message.StartsWith("HS/"))
+        {
+            var msgArr = msg.message.Split(' '); // HS/ (HSplayerUid)
+            var hsPlayer = uint.Parse(msgArr[1]);
+
+            if (hsPlayerUid == 0)
+            {
+                hsPlayerUid = hsPlayer;
+            }
+            else if (hsPlayerUid != hsPlayer)
+            {
+                // problem happened
+            }
         }
 
         if (u.UID == userList[0].UID)

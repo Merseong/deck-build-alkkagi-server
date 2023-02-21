@@ -130,6 +130,7 @@ public enum PacketType
     /// </summary>
     /// <remarks>TestPacket</remarks>
     PACKET_TEST,
+    PROBLEM_REPORT,
     /// <summary>
     /// 로그인을 위해 사용
     /// </summary>
