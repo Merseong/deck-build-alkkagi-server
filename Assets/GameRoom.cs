@@ -186,6 +186,7 @@ public class GameRoom
     {
         if (p.Type != (short)PacketType.ROOM_BROADCAST) return;
 
+
         var msg = MessagePacket.Deserialize(p.Data);
         var msg_sender = new MessagePacket(msg);
         var msg_receiver = new MessagePacket(msg);

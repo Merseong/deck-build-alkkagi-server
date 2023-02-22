@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Networking.Transport;
+using Unity.Networking.Transport.Utilities;
 using Unity.Collections;
 
 public class ListenServer : SingletonBehaviour<ListenServer>
@@ -23,7 +24,10 @@ public class ListenServer : SingletonBehaviour<ListenServer>
         settings.WithNetworkConfigParameters(
             connectTimeoutMS: 2000,
             maxConnectAttempts: 10,
-            disconnectTimeoutMS: 600000);
+            disconnectTimeoutMS: 600000,
+            heartbeatTimeoutMS: 10000);
+        settings.WithFragmentationStageParameters(payloadCapacity: 1048576);
+        settings.WithReliableStageParameters(windowSize: 64);
 
         if (isWebSocketServer)
         {

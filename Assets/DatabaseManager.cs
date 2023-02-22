@@ -70,8 +70,8 @@ public class DatabaseManager : SingletonBehaviour<DatabaseManager>
 
     public async Task<UserDataSchema> FindByIdAsync(string id)
     {
-        var snapshot = await dbRef.Child("users").OrderByChild("loginId").EqualTo(id).LimitToFirst(1).GetValueAsync();
-        if (snapshot.ChildrenCount == 0) return null;
+        var snapshot = await dbRef.Child("users").OrderByChild("loginId").EqualTo(id).GetValueAsync();
+        if (!snapshot.HasChildren) return null;
         foreach (var child in snapshot.Children)
         {
             return JsonUtility.FromJson<UserDataSchema>(child.GetRawJsonValue());
