@@ -21,6 +21,7 @@ public class GameRoom
 
     private List<UserToken> userList = new List<UserToken>(2);
     private string[] usingDeck = new string[2];
+    private int[] usingDeckCount = new int[2];
 
     private uint hsPlayerUid = 0;
     private Dictionary<uint, byte[]> syncVarDataDict = new Dictionary<uint, byte[]>();
@@ -33,7 +34,7 @@ public class GameRoom
         MyDebug.Log($"[MAIN] Room Created, room ID : {roomId}");
     }
 
-    public bool UserEnter(UserToken user, string deckCode)
+    public bool UserEnter(UserToken user, string deckCode, int deckCount)
     {
         // max player
         if (userList.Count > 2) return false;
@@ -43,6 +44,7 @@ public class GameRoom
 
         int idx = userList.Count;
         usingDeck[idx] = deckCode;
+        usingDeckCount[idx] = deckCount;
         userList.Add(user);
         user.Room = this;
         MainServer.Inst.ApplyRoomIncluded(user);
@@ -116,12 +118,12 @@ public class GameRoom
         var startData = new MessagePacket
         {
             senderID = 0,
-            message = $"START/ {ReadyId} {userList[1].UID} {usingDeck[0]} {100}"
+            message = $"START/ {ReadyId} {userList[1].UID} {usingDeck[0]} {usingDeckCount[1]}"
             // 선턴ID 상대ID 내덱 상대덱장수
             // TODO: 서버에서도 덱 파싱이 가능하도록 해야됨
         };
         startPackets[0] = new Packet().Pack(PacketType.ROOM_CONTROL, startData);
-        startData.message = $"START/ {ReadyId} {userList[0].UID} {usingDeck[1]} {100}";
+        startData.message = $"START/ {ReadyId} {userList[0].UID} {usingDeck[1]} {usingDeckCount[0]}";
         startPackets[1] = new Packet().Pack(PacketType.ROOM_CONTROL, startData);
         for (int i = 0; i < 2; ++i)
         {

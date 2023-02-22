@@ -113,8 +113,8 @@ public class MainServer : SingletonBehaviour<MainServer>
         gameRoomList.Add(newRoom);
 
         // TODO: 랜덤으로 유저 1과 2중 한쪽을 먼저 enter시켜야함.
-        newRoom.UserEnter(user1.user, user1.deckCode);
-        newRoom.UserEnter(user2.user, user2.deckCode);
+        newRoom.UserEnter(user1.user, user1.deckCode, user1.deckCount);
+        newRoom.UserEnter(user2.user, user2.deckCode, user2.deckCount);
     }
 
     private void ReceiveMatchmakingEnter(UserToken user, Packet p)
@@ -123,14 +123,14 @@ public class MainServer : SingletonBehaviour<MainServer>
 
         var message = MessagePacket.Deserialize(p.Data);
         var msgArr = message.message.Split(' ');
-        // ENTER/ (deckCode)
         
         switch (msgArr[0])
         {
             case "ENTER/":
+                // ENTER/ (deckCode) (deckCount)
                 MyDebug.Log($"[{user.UID}] start matchmaking");
                 Inst.MatchQueue.AddTicket(
-                    new MatchQueue.Ticket(user, msgArr[1], (uint)user.UserData["rating"], Time.time));
+                    new MatchQueue.Ticket(user, msgArr[1], (uint)user.UserData["rating"], Time.time, int.Parse(msgArr[2])));
                 break;
             case "EXIT/":
                 MyDebug.Log($"[{user.UID}] cancel matchmaking");

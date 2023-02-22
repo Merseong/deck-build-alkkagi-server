@@ -59,13 +59,15 @@ public class MatchQueue
         public float enterTime;
         public bool isExpired = false;
         public string deckCode;
+        public int deckCount;
 
-        public Ticket(UserToken user, string deckCode, uint mmr, float enterTime)
+        public Ticket(UserToken user, string deckCode, uint mmr, float enterTime, int deckCount)
         {
             this.user = user;
             this.mmr = mmr;
             this.enterTime = enterTime;
             this.deckCode = deckCode;
+            this.deckCount = deckCount;
         }
     }
 }
