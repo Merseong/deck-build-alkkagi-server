@@ -68,7 +68,7 @@ public class GameRoom
         return true;
     }
 
-    private bool BreakRoom(UserToken breaker)
+    private bool BreakRoom(UserToken breaker, string winOption = "", string loseOption = "")
     {
         userList.ForEach(u =>
         {
@@ -93,7 +93,7 @@ public class GameRoom
                     break;
                 case GameRoomStatus.RUNNING:
                 case GameRoomStatus.FINISH:
-                    exitData.message += $" {(u.UID == breaker.UID ? 'L' : 'W')}";
+                    exitData.message += $" {(u.UID == breaker.UID ? 'L' : 'W')} {(u.UID == breaker.UID ? loseOption : winOption)}";
                     packet = new Packet().Pack(PacketType.ROOM_CONTROL, exitData);
                     u.Send(packet);
                     break;
@@ -147,6 +147,8 @@ public class GameRoom
             {
                 loserDict.Add("lose", (uint)loser.UserData["lose"] + 1);
                 winnerDict.Add("win", (uint)winner.UserData["win"] + 1);
+                loserDict.Add("rating", (uint)loser.UserData["rating"] - 10);
+                winnerDict.Add("rating", (uint)winner.UserData["rating"] + 20);
                 loserDict.Add("moneyPoint", (uint)loser.UserData["moneyPoint"] + 1);
                 winnerDict.Add("moneyPoint", (uint)winner.UserData["moneyPoint"] + 3);
             }
@@ -158,6 +160,8 @@ public class GameRoom
 
                 loserDict.Add(loserDictKey, (uint)loser.UserData[loserDictKey] + 1);
                 winnerDict.Add(winnerDictKey, (uint)winner.UserData[winnerDictKey] + 1);
+                loserDict.Add("rating", (uint)loser.UserData["rating"] - 20);
+                winnerDict.Add("rating", (uint)winner.UserData["rating"] + 40);
                 loserDict.Add("moneyPoint", (uint)loser.UserData["moneyPoint"] + 1);
                 winnerDict.Add("moneyPoint", (uint)winner.UserData["moneyPoint"] + 3);
                 if (winnerWithHs)
